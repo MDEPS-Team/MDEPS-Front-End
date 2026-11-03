@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">MDEPS_APPLICATION</string>
+
+    <!-- IAM Login -->
+    <string name="iam_login_title">Vantage PMO</string>
+    <string name="iam_login_subtitle">Project Management Office</string>
+    <string name="iam_login_corporate_email_label">Corporate email</string>
+    <string name="iam_login_password_label">Password</string>
+    <string name="iam_login_sign_in">Sign In</string>
+
+    <!-- IAM Login — accessibility -->
+    <string name="iam_a11y_email_icon">Corporate email field icon</string>
+    <string name="iam_a11y_password_icon">Password field icon</string>
+    <string name="iam_a11y_corporate_email_field">Corporate email input</string>
+    <string name="iam_a11y_password_field">Password input, characters hidden</string>
+    <string name="iam_a11y_sign_in_button">Sign in to your account</string>
 </resources>
