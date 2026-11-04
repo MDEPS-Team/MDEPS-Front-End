@@ -24,4 +24,37 @@
     <string name="iam_biometric_error">Error de autenticación: %1$s</string>
     <string name="iam_biometric_unavailable">La autenticación biométrica no está disponible en este dispositivo</string>
     <string name="iam_a11y_biometric_button">Iniciar sesión con biometría</string>
+
+    <!-- IAM Perfil -->
+    <string name="iam_profile_title">Perfil</string>
+    <string name="iam_profile_metric_projects">14 Proyectos</string>
+    <string name="iam_profile_metric_sla">98.4% SLA</string>
+    <string name="iam_profile_metric_team">32 Miembros del equipo</string>
+    <string name="iam_profile_change_avatar">Cambiar avatar</string>
+    <string name="iam_profile_security_settings">Configuración de seguridad</string>
+    <string name="iam_profile_user_name">Alejandro Vance Rivas</string>
+    <string name="iam_profile_user_role">Director Senior de Entrega y PMO</string>
+    <string name="iam_profile_verified_badge">ID corporativo verificado</string>
+    <string name="iam_profile_avatar_updated">Foto de perfil actualizada</string>
+
+    <!-- IAM Perfil — accesibilidad -->
+    <string name="iam_a11y_profile_avatar">Imagen del avatar de perfil</string>
+    <string name="iam_a11y_profile_metric_projects">Métrica de proyectos: 14 proyectos</string>
+    <string name="iam_a11y_profile_metric_sla">Métrica de SLA: 98.4 por ciento</string>
+    <string name="iam_a11y_profile_metric_team">Métrica de equipo: 32 miembros</string>
+    <string name="iam_a11y_change_avatar_button">Cambiar avatar de perfil desde la galería</string>
+    <string name="iam_a11y_security_settings_button">Abrir configuración de seguridad</string>
+
+    <!-- IAM Hoja de seguridad -->
+    <string name="iam_security_sheet_title">Configuración de seguridad</string>
+    <string name="iam_security_change_email">Cambiar correo corporativo</string>
+    <string name="iam_security_view_id">Ver ID de empleado</string>
+    <string name="iam_security_change_2fa">Cambiar autenticación de dos factores</string>
+    <string name="iam_security_employee_id_label">ID de empleado</string>
+    <string name="iam_security_employee_id_value">#ENT-88492-SEC</string>
+    <string name="iam_security_close">Cerrar</string>
+    <string name="iam_a11y_security_close">Cerrar configuración de seguridad</string>
+    <string name="iam_a11y_security_change_email">Opción para cambiar correo corporativo</string>
+    <string name="iam_a11y_security_view_id">Opción para ver ID de empleado</string>
+    <string name="iam_a11y_security_change_2fa">Opción para cambiar autenticación de dos factores</string>
 </resources>

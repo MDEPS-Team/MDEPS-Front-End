@@ -37,8 +37,8 @@ import com.example.mdeps_application.ui.AnalyticsScreen
 import com.example.mdeps_application.ui.CreateProjectScreen
 import com.example.mdeps_application.ui.GovernanceScreen
 import com.example.mdeps_application.ui.HomeScreen
+import com.example.mdeps_application.iam.ui.ProfileScreen
 import com.example.mdeps_application.ui.LoginScreen
-import com.example.mdeps_application.ui.ProfileScreen
 import com.example.mdeps_application.ui.ProjectsScreen
 import com.example.mdeps_application.ui.Vx
 import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
