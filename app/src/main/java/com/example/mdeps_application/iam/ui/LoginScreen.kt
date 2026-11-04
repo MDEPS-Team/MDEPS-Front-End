@@ -1,5 +1,6 @@
 package com.example.mdeps_application.iam.ui
 
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,14 +30,17 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import android.util.Log
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -43,21 +48,28 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mdeps_application.R
-import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
+import com.example.mdeps_application.iam.application.IamViewModel
 import kotlinx.coroutines.launch
 
+private const val BIOMETRIC_LOG_TAG = "IamBiometric"
+
 @Composable
-fun LoginScreen() {
+fun LoginScreen(
+    viewModel: IamViewModel,
+    onLoginSuccess: () -> Unit,
+) {
     var corporateEmail by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val hostActivity = LocalActivity.current
+    val fragmentActivity = hostActivity as? FragmentActivity
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -70,32 +82,54 @@ fun LoginScreen() {
     val biometricSuccessMessage = stringResource(R.string.iam_biometric_success)
     val biometricUnavailableMessage = stringResource(R.string.iam_biometric_unavailable)
 
+    LaunchedEffect(uiState.isAuthenticated) {
+        if (uiState.isAuthenticated) {
+            onLoginSuccess()
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        val message = uiState.errorMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearError()
+    }
+
     val launchBiometricPrompt: () -> Unit = {
-        val activity = context as? FragmentActivity
-        if (activity == null) {
+        if (fragmentActivity == null) {
+            Log.e(
+                BIOMETRIC_LOG_TAG,
+                "BiometricPrompt requires FragmentActivity; host is ${hostActivity?.javaClass?.name}",
+            )
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(biometricUnavailableMessage)
             }
         } else {
-        val biometricHelper = BiometricHelper(activity)
-        biometricHelper.authenticate(
-            onSuccess = {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(biometricSuccessMessage)
-                }
-            },
-            onError = { errorCode, errorMessage ->
-                val userDismissed =
-                    errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
-                        errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON
-                if (!userDismissed) {
+            Log.d(BIOMETRIC_LOG_TAG, "Launching BiometricPrompt on ${fragmentActivity.javaClass.simpleName}")
+            val biometricHelper = BiometricHelper(fragmentActivity)
+            biometricHelper.authenticate(
+                onSuccess = {
+                    Log.i(BIOMETRIC_LOG_TAG, "Biometric authentication succeeded")
                     coroutineScope.launch {
-                        val message = context.getString(R.string.iam_biometric_error, errorMessage)
-                        snackbarHostState.showSnackbar(message)
+                        snackbarHostState.showSnackbar(biometricSuccessMessage)
                     }
-                }
-            },
-        )
+                    viewModel.signInWithBiometrics()
+                },
+                onError = { errorCode, errorMessage ->
+                    Log.w(
+                        BIOMETRIC_LOG_TAG,
+                        "Biometric error code=$errorCode message=$errorMessage",
+                    )
+                    val userDismissed =
+                        errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
+                            errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON
+                    if (!userDismissed) {
+                        coroutineScope.launch {
+                            val message = context.getString(R.string.iam_biometric_error, errorMessage)
+                            snackbarHostState.showSnackbar(message)
+                        }
+                    }
+                },
+            )
         }
     }
 
@@ -140,6 +174,7 @@ fun LoginScreen() {
                         .semantics { contentDescription = emailFieldDescription },
                     label = { Text(stringResource(R.string.iam_login_corporate_email_label)) },
                     singleLine = true,
+                    enabled = !uiState.isLoading,
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = {
                         Icon(
@@ -159,6 +194,7 @@ fun LoginScreen() {
                         .semantics { contentDescription = passwordFieldDescription },
                     label = { Text(stringResource(R.string.iam_login_password_label)) },
                     singleLine = true,
+                    enabled = !uiState.isLoading,
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = {
                         Icon(
@@ -172,21 +208,30 @@ fun LoginScreen() {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = { /* wired from application layer */ },
+                    onClick = { viewModel.signIn(corporateEmail, password) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
                         .semantics { contentDescription = signInButtonDescription },
+                    enabled = !uiState.isLoading,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                     ),
                 ) {
-                    Text(
-                        text = stringResource(R.string.iam_login_sign_in),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.iam_login_sign_in),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -200,6 +245,7 @@ fun LoginScreen() {
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
+                        enabled = !uiState.isLoading,
                         shape = RoundedCornerShape(12.dp),
                     ) {
                         Icon(
@@ -216,6 +262,7 @@ fun LoginScreen() {
                     }
                     IconButton(
                         onClick = launchBiometricPrompt,
+                        enabled = !uiState.isLoading,
                         modifier = Modifier.semantics { contentDescription = biometricButtonDescription },
                     ) {
                         Icon(
@@ -228,13 +275,5 @@ fun LoginScreen() {
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun LoginScreenPreview() {
-    MDEPS_APPLICATIONTheme {
-        LoginScreen()
     }
 }
