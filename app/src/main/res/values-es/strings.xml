@@ -14,4 +14,14 @@
     <string name="iam_a11y_corporate_email_field">Campo de entrada de correo corporativo</string>
     <string name="iam_a11y_password_field">Campo de contraseña, caracteres ocultos</string>
     <string name="iam_a11y_sign_in_button">Iniciar sesión en tu cuenta</string>
+
+    <!-- IAM Biométrico -->
+    <string name="iam_biometric_title">Iniciar sesión con biometría</string>
+    <string name="iam_biometric_subtitle">Confirma tu identidad con huella dactilar o reconocimiento facial</string>
+    <string name="iam_biometric_cancel">Cancelar</string>
+    <string name="iam_biometric_sign_in_action">Iniciar sesión con biometría</string>
+    <string name="iam_biometric_success">Autenticación biométrica exitosa</string>
+    <string name="iam_biometric_error">Error de autenticación: %1$s</string>
+    <string name="iam_biometric_unavailable">La autenticación biométrica no está disponible en este dispositivo</string>
+    <string name="iam_a11y_biometric_button">Iniciar sesión con biometría</string>
 </resources>

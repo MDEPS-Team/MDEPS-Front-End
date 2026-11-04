@@ -14,4 +14,14 @@
     <string name="iam_a11y_corporate_email_field">Corporate email input</string>
     <string name="iam_a11y_password_field">Password input, characters hidden</string>
     <string name="iam_a11y_sign_in_button">Sign in to your account</string>
+
+    <!-- IAM Biometric -->
+    <string name="iam_biometric_title">Sign in with Biometrics</string>
+    <string name="iam_biometric_subtitle">Confirm your identity using fingerprint or face unlock</string>
+    <string name="iam_biometric_cancel">Cancel</string>
+    <string name="iam_biometric_sign_in_action">Sign in with biometrics</string>
+    <string name="iam_biometric_success">Biometric authentication successful</string>
+    <string name="iam_biometric_error">Authentication failed: %1$s</string>
+    <string name="iam_biometric_unavailable">Biometric authentication is not available on this device</string>
+    <string name="iam_a11y_biometric_button">Sign in with biometrics</string>
 </resources>

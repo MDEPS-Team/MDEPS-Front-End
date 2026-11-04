@@ -49,7 +49,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MDEPS_APPLICATIONTheme(darkTheme = false) {
-                VantagePmoApp()
+
+                com.example.mdeps_application.iam.ui.LoginScreen()
             }
         }
     }
