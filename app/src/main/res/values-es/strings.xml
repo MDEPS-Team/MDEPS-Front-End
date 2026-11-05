@@ -130,4 +130,15 @@
     <string name="gro_a11y_swipe_resolve_icon">Marcar riesgo como resuelto</string>
     <string name="gro_a11y_risk_card">Elemento de la matriz de riesgos</string>
     <string name="gro_a11y_severity_badge">Severidad del riesgo: %1$s</string>
+
+    <!-- GRO — línea de tiempo de hitos -->
+    <string name="gro_milestones_title">Línea de tiempo del proyecto</string>
+    <string name="gro_empty_milestones">No hay hitos programados para este proyecto.</string>
+    <string name="gro_date_format_pattern">dd MMM yyyy</string>
+
+    <!-- GRO — accesibilidad de hitos -->
+    <string name="gro_a11y_milestone_reached">Hito alcanzado: %1$s, fecha objetivo %2$s</string>
+    <string name="gro_a11y_milestone_pending">Hito pendiente: %1$s, fecha objetivo %2$s</string>
+    <string name="gro_a11y_toggle_milestone">Alternar estado de hito alcanzado</string>
+    <string name="gro_a11y_milestone_check_icon">Indicador de hito completado</string>
 </resources>

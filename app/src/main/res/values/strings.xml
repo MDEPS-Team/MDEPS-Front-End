@@ -130,4 +130,15 @@
     <string name="gro_a11y_swipe_resolve_icon">Mark risk as resolved</string>
     <string name="gro_a11y_risk_card">Risk matrix item</string>
     <string name="gro_a11y_severity_badge">Risk severity: %1$s</string>
+
+    <!-- GRO — milestones timeline -->
+    <string name="gro_milestones_title">Project Timeline</string>
+    <string name="gro_empty_milestones">No milestones scheduled for this project.</string>
+    <string name="gro_date_format_pattern">MMM dd, yyyy</string>
+
+    <!-- GRO — milestones accessibility -->
+    <string name="gro_a11y_milestone_reached">Milestone reached: %1$s, target date %2$s</string>
+    <string name="gro_a11y_milestone_pending">Milestone pending: %1$s, target date %2$s</string>
+    <string name="gro_a11y_toggle_milestone">Toggle milestone reached status</string>
+    <string name="gro_a11y_milestone_check_icon">Milestone completed indicator</string>
 </resources>
