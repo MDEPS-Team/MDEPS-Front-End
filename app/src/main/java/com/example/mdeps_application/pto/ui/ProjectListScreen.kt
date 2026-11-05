@@ -24,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -31,17 +32,19 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mdeps_application.R
+import com.example.mdeps_application.pto.application.PtoViewModel
 import com.example.mdeps_application.pto.domain.Project
 import com.example.mdeps_application.pto.domain.ProjectStatus
 import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
 
 @Composable
 fun ProjectListScreen(
-    projects: List<Project>,
-    onAddProjectClick: () -> Unit,
-    onProjectClick: (Project) -> Unit,
+    viewModel: PtoViewModel,
+    onProjectClick: (Long) -> Unit,
 ) {
+    val projects by viewModel.projects.collectAsStateWithLifecycle()
     val addProjectDescription = stringResource(R.string.pto_a11y_add_project)
     val openProjectDescription = stringResource(R.string.pto_a11y_project_card)
 
@@ -58,7 +61,7 @@ fun ProjectListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddProjectClick,
+                onClick = { viewModel.addDummyProject() },
                 modifier = Modifier.semantics { contentDescription = addProjectDescription },
             ) {
                 Icon(
@@ -89,7 +92,7 @@ fun ProjectListScreen(
                 items(projects, key = { it.id }) { project ->
                     ProjectCard(
                         project = project,
-                        onClick = { onProjectClick(project) },
+                        onClick = { onProjectClick(project.id) },
                         cardContentDescription = openProjectDescription,
                     )
                 }
@@ -126,9 +129,7 @@ fun ProjectCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = stringResource(
-                    R.string.pto_project_status_label,
-                ) + ": " + project.status.localizedLabel(),
+                text = stringResource(R.string.pto_project_status_label) + ": " + project.status.localizedLabel(),
                 modifier = Modifier.padding(top = 10.dp),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
@@ -140,16 +141,12 @@ fun ProjectCard(
 
 @Preview(showBackground = true)
 @Composable
-private fun ProjectListScreenPreview() {
-    val sampleProjects = listOf(
-        Project(1L, "ERP Rollout", "Enterprise resource planning deployment", ProjectStatus.IN_PROGRESS),
-        Project(2L, "Marketing Campaign", "Q4 omnichannel launch", ProjectStatus.AT_RISK),
-    )
+private fun ProjectCardPreview() {
     MDEPS_APPLICATIONTheme {
-        ProjectListScreen(
-            projects = sampleProjects,
-            onAddProjectClick = {},
-            onProjectClick = {},
+        ProjectCard(
+            project = Project(1L, "ERP Rollout", "Enterprise deployment", ProjectStatus.IN_PROGRESS),
+            onClick = {},
+            cardContentDescription = "Preview",
         )
     }
 }

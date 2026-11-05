@@ -3,6 +3,7 @@
 package com.example.mdeps_application.pto.ui
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -37,6 +39,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,21 +54,61 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mdeps_application.R
 import com.example.mdeps_application.pto.application.ProjectPdfExporter
+import com.example.mdeps_application.pto.application.PtoViewModel
 import com.example.mdeps_application.pto.domain.Project
-import com.example.mdeps_application.pto.domain.ProjectStatus
 import com.example.mdeps_application.pto.domain.Task
-import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
 import kotlinx.coroutines.launch
-import android.content.ActivityNotFoundException
 
 @Composable
 fun ProjectDetailScreen(
+    viewModel: PtoViewModel,
+    onNavigateBack: () -> Unit,
+) {
+    val detailState by viewModel.projectDetailState.collectAsStateWithLifecycle()
+    val project = detailState.project
+    val tasks = detailState.tasks
+
+    DisposableEffect(Unit) {
+        onDispose { viewModel.clearProjectDetails() }
+    }
+
+    if (project == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    ProjectDetailContent(
+        project = project,
+        tasks = tasks,
+        onNavigateBack = onNavigateBack,
+        onAddTaskClick = {
+            viewModel.addTask(
+                projectId = project.id,
+                title = "Task ${tasks.size + 1}",
+            )
+        },
+        onTaskCompletedChange = { task, _ ->
+            viewModel.toggleTaskStatus(task)
+        },
+        onEvidencePhotoCaptured = { task, uriString ->
+            viewModel.updateTaskEvidence(task.id, uriString)
+        },
+    )
+}
+
+@Composable
+private fun ProjectDetailContent(
     project: Project,
     tasks: List<Task>,
     onNavigateBack: () -> Unit,
@@ -352,30 +395,5 @@ fun TaskItem(
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun ProjectDetailScreenPreview() {
-    val project = Project(
-        id = 1L,
-        name = "ERP Rollout",
-        description = "Deploy ERP modules across business units.",
-        status = ProjectStatus.IN_PROGRESS,
-    )
-    val tasks = listOf(
-        Task(1L, 1L, "Configure master data", true, null),
-        Task(2L, 1L, "Validate warehouse module", false, "file:///sample/evidence.jpg"),
-    )
-    MDEPS_APPLICATIONTheme {
-        ProjectDetailScreen(
-            project = project,
-            tasks = tasks,
-            onNavigateBack = {},
-            onAddTaskClick = {},
-            onTaskCompletedChange = { _, _ -> },
-            onEvidencePhotoCaptured = { _, _ -> },
-        )
     }
 }
