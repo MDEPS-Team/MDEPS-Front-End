@@ -57,4 +57,41 @@
     <string name="iam_a11y_security_change_email">Change corporate email option</string>
     <string name="iam_a11y_security_view_id">View employee ID option</string>
     <string name="iam_a11y_security_change_2fa">Change two-factor authentication option</string>
+
+    <!-- PTO — screens -->
+    <string name="pto_projects_title">Projects</string>
+    <string name="pto_project_tasks_title">Project Tasks</string>
+    <string name="pto_add_project">Add Project</string>
+    <string name="pto_add_task">Add Task</string>
+    <string name="pto_project_description_label">Description</string>
+    <string name="pto_project_status_label">Status</string>
+    <string name="pto_tasks_section_title">Tasks</string>
+    <string name="pto_empty_projects">No projects yet. Tap Add Project to create one.</string>
+    <string name="pto_empty_tasks">No tasks for this project. Tap Add Task to create one.</string>
+    <string name="pto_task_completed">Completed</string>
+    <string name="pto_task_pending">Pending</string>
+    <string name="pto_evidence_attached">Evidence photo attached</string>
+    <string name="pto_evidence_missing">No evidence photo</string>
+    <string name="pto_navigate_back">Navigate back</string>
+
+    <!-- PTO — project status -->
+    <string name="pto_status_planning">Planning</string>
+    <string name="pto_status_in_progress">In progress</string>
+    <string name="pto_status_at_risk">At risk</string>
+    <string name="pto_status_completed">Completed</string>
+
+    <!-- PTO — accessibility -->
+    <string name="pto_a11y_add_project">Add a new project</string>
+    <string name="pto_a11y_add_task">Add a new task to this project</string>
+    <string name="pto_a11y_take_evidence_photo">Take evidence photo for this task</string>
+    <string name="pto_a11y_project_card">Open project details</string>
+    <string name="pto_a11y_task_checkbox">Mark task as completed or pending</string>
+    <string name="pto_a11y_evidence_attached_indicator">Task has evidence photo attached</string>
+    <string name="pto_a11y_navigate_back">Go back to projects list</string>
+    <string name="pto_camera_title">Evidence Camera</string>
+    <string name="pto_camera_permission_denied">Camera permission is required to capture evidence photos.</string>
+    <string name="pto_a11y_capture_evidence_photo">Capture evidence photo</string>
+    <string name="pto_a11y_close_camera">Close camera</string>
+    <string name="pto_a11y_replace_evidence_photo">Replace evidence photo for this task</string>
+    <string name="pto_a11y_evidence_thumbnail">Task evidence photo thumbnail</string>
 </resources>
