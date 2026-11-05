@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -55,11 +56,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.example.mdeps_application.R
+import com.example.mdeps_application.pto.application.ProjectPdfExporter
 import com.example.mdeps_application.pto.domain.Project
 import com.example.mdeps_application.pto.domain.ProjectStatus
 import com.example.mdeps_application.pto.domain.Task
 import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
 import kotlinx.coroutines.launch
+import android.content.ActivityNotFoundException
 
 @Composable
 fun ProjectDetailScreen(
@@ -79,6 +82,10 @@ fun ProjectDetailScreen(
     val navigateBackDescription = stringResource(R.string.pto_a11y_navigate_back)
     val addTaskDescription = stringResource(R.string.pto_a11y_add_task)
     val permissionDeniedMessage = stringResource(R.string.pto_camera_permission_denied)
+    val exportPdfDescription = stringResource(R.string.pto_a11y_export_pdf)
+    val exportPdfFailedMessage = stringResource(R.string.pto_export_pdf_failed)
+    val exportPdfNoAppMessage = stringResource(R.string.pto_export_pdf_no_app)
+    val pdfExporter = remember(context) { ProjectPdfExporter(context.applicationContext) }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -126,6 +133,30 @@ fun ProjectDetailScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = navigateBackDescription,
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    runCatching {
+                                        val pdfUri = pdfExporter.exportProjectReport(project, tasks)
+                                        PtoPdfShare.launchPdfShareOrView(context, pdfUri)
+                                    }.onFailure { error ->
+                                        val message = when (error) {
+                                            is ActivityNotFoundException -> exportPdfNoAppMessage
+                                            else -> exportPdfFailedMessage
+                                        }
+                                        snackbarHostState.showSnackbar(message)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.semantics { contentDescription = exportPdfDescription },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = exportPdfDescription,
                             )
                         }
                     },

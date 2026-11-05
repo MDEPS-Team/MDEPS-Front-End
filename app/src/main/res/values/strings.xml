@@ -94,4 +94,19 @@
     <string name="pto_a11y_close_camera">Close camera</string>
     <string name="pto_a11y_replace_evidence_photo">Replace evidence photo for this task</string>
     <string name="pto_a11y_evidence_thumbnail">Task evidence photo thumbnail</string>
+    <string name="pto_export_pdf">Export to PDF</string>
+    <string name="pto_a11y_export_pdf">Export project report to PDF</string>
+    <string name="pto_export_pdf_failed">Could not generate the PDF report.</string>
+    <string name="pto_export_pdf_no_app">No app is available to open or share PDF files.</string>
+    <string name="pto_export_pdf_chooser_title">Share project PDF</string>
+
+    <!-- PTO — PDF document labels -->
+    <string name="pto_pdf_report_title">Project Report</string>
+    <string name="pto_pdf_status_label">Status</string>
+    <string name="pto_pdf_description_label">Description</string>
+    <string name="pto_pdf_tasks_header">Tasks</string>
+    <string name="pto_pdf_task_completed">Completed</string>
+    <string name="pto_pdf_task_pending">Pending</string>
+    <string name="pto_pdf_evidence_yes">Evidence attached</string>
+    <string name="pto_pdf_evidence_no">No evidence</string>
 </resources>
