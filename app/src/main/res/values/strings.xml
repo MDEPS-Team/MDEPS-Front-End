@@ -109,4 +109,25 @@
     <string name="pto_pdf_task_pending">Pending</string>
     <string name="pto_pdf_evidence_yes">Evidence attached</string>
     <string name="pto_pdf_evidence_no">No evidence</string>
+
+    <!-- GRO — risk matrix -->
+    <string name="gro_risks_title">Risk Matrix</string>
+    <string name="gro_empty_risks">No active risks</string>
+
+    <!-- GRO — risk severity -->
+    <string name="gro_severity_low">Low</string>
+    <string name="gro_severity_medium">Medium</string>
+    <string name="gro_severity_high">High</string>
+    <string name="gro_severity_critical">Critical</string>
+
+    <!-- GRO — risk status -->
+    <string name="gro_status_identified">Identified</string>
+    <string name="gro_status_mitigating">Mitigating</string>
+    <string name="gro_status_resolved">Resolved</string>
+
+    <!-- GRO — accessibility -->
+    <string name="gro_a11y_swipe_to_resolve">Swipe to mark risk as resolved</string>
+    <string name="gro_a11y_swipe_resolve_icon">Mark risk as resolved</string>
+    <string name="gro_a11y_risk_card">Risk matrix item</string>
+    <string name="gro_a11y_severity_badge">Risk severity: %1$s</string>
 </resources>

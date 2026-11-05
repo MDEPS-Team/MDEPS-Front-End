@@ -109,4 +109,25 @@
     <string name="pto_pdf_task_pending">Pendiente</string>
     <string name="pto_pdf_evidence_yes">Evidencia adjunta</string>
     <string name="pto_pdf_evidence_no">Sin evidencia</string>
+
+    <!-- GRO — matriz de riesgos -->
+    <string name="gro_risks_title">Matriz de riesgos</string>
+    <string name="gro_empty_risks">No hay riesgos activos</string>
+
+    <!-- GRO — severidad del riesgo -->
+    <string name="gro_severity_low">Baja</string>
+    <string name="gro_severity_medium">Media</string>
+    <string name="gro_severity_high">Alta</string>
+    <string name="gro_severity_critical">Crítica</string>
+
+    <!-- GRO — estado del riesgo -->
+    <string name="gro_status_identified">Identificado</string>
+    <string name="gro_status_mitigating">En mitigación</string>
+    <string name="gro_status_resolved">Resuelto</string>
+
+    <!-- GRO — accesibilidad -->
+    <string name="gro_a11y_swipe_to_resolve">Desliza para marcar el riesgo como resuelto</string>
+    <string name="gro_a11y_swipe_resolve_icon">Marcar riesgo como resuelto</string>
+    <string name="gro_a11y_risk_card">Elemento de la matriz de riesgos</string>
+    <string name="gro_a11y_severity_badge">Severidad del riesgo: %1$s</string>
 </resources>
