@@ -57,4 +57,88 @@
     <string name="iam_a11y_security_change_email">Opción para cambiar correo corporativo</string>
     <string name="iam_a11y_security_view_id">Opción para ver ID de empleado</string>
     <string name="iam_a11y_security_change_2fa">Opción para cambiar autenticación de dos factores</string>
+
+    <!-- PTO — pantallas -->
+    <string name="pto_projects_title">Proyectos</string>
+    <string name="pto_project_tasks_title">Tareas del proyecto</string>
+    <string name="pto_add_project">Agregar proyecto</string>
+    <string name="pto_add_task">Agregar tarea</string>
+    <string name="pto_project_description_label">Descripción</string>
+    <string name="pto_project_status_label">Estado</string>
+    <string name="pto_tasks_section_title">Tareas</string>
+    <string name="pto_empty_projects">Aún no hay proyectos. Toca Agregar proyecto para crear uno.</string>
+    <string name="pto_empty_tasks">No hay tareas en este proyecto. Toca Agregar tarea para crear una.</string>
+    <string name="pto_task_completed">Completada</string>
+    <string name="pto_task_pending">Pendiente</string>
+    <string name="pto_evidence_attached">Foto de evidencia adjunta</string>
+    <string name="pto_evidence_missing">Sin foto de evidencia</string>
+    <string name="pto_navigate_back">Volver</string>
+
+    <!-- PTO — estado del proyecto -->
+    <string name="pto_status_planning">Planificación</string>
+    <string name="pto_status_in_progress">En progreso</string>
+    <string name="pto_status_at_risk">En riesgo</string>
+    <string name="pto_status_completed">Completado</string>
+
+    <!-- PTO — accesibilidad -->
+    <string name="pto_a11y_add_project">Agregar un nuevo proyecto</string>
+    <string name="pto_a11y_add_task">Agregar una nueva tarea a este proyecto</string>
+    <string name="pto_a11y_take_evidence_photo">Tomar foto de evidencia para esta tarea</string>
+    <string name="pto_a11y_project_card">Abrir detalle del proyecto</string>
+    <string name="pto_a11y_task_checkbox">Marcar tarea como completada o pendiente</string>
+    <string name="pto_a11y_evidence_attached_indicator">La tarea tiene foto de evidencia adjunta</string>
+    <string name="pto_a11y_navigate_back">Regresar a la lista de proyectos</string>
+    <string name="pto_camera_title">Cámara de evidencia</string>
+    <string name="pto_camera_permission_denied">Se requiere permiso de cámara para capturar fotos de evidencia.</string>
+    <string name="pto_a11y_capture_evidence_photo">Capturar foto de evidencia</string>
+    <string name="pto_a11y_close_camera">Cerrar cámara</string>
+    <string name="pto_a11y_replace_evidence_photo">Reemplazar foto de evidencia de esta tarea</string>
+    <string name="pto_a11y_evidence_thumbnail">Miniatura de foto de evidencia de la tarea</string>
+    <string name="pto_export_pdf">Exportar a PDF</string>
+    <string name="pto_a11y_export_pdf">Exportar reporte del proyecto a PDF</string>
+    <string name="pto_export_pdf_failed">No se pudo generar el reporte PDF.</string>
+    <string name="pto_export_pdf_no_app">No hay aplicaciones disponibles para abrir o compartir archivos PDF.</string>
+    <string name="pto_export_pdf_chooser_title">Compartir PDF del proyecto</string>
+
+    <!-- PTO — etiquetas del documento PDF -->
+    <string name="pto_pdf_report_title">Reporte del proyecto</string>
+    <string name="pto_pdf_status_label">Estado</string>
+    <string name="pto_pdf_description_label">Descripción</string>
+    <string name="pto_pdf_tasks_header">Tareas</string>
+    <string name="pto_pdf_task_completed">Completada</string>
+    <string name="pto_pdf_task_pending">Pendiente</string>
+    <string name="pto_pdf_evidence_yes">Evidencia adjunta</string>
+    <string name="pto_pdf_evidence_no">Sin evidencia</string>
+
+    <!-- GRO — matriz de riesgos -->
+    <string name="gro_risks_title">Matriz de riesgos</string>
+    <string name="gro_empty_risks">No hay riesgos activos</string>
+
+    <!-- GRO — severidad del riesgo -->
+    <string name="gro_severity_low">Baja</string>
+    <string name="gro_severity_medium">Media</string>
+    <string name="gro_severity_high">Alta</string>
+    <string name="gro_severity_critical">Crítica</string>
+
+    <!-- GRO — estado del riesgo -->
+    <string name="gro_status_identified">Identificado</string>
+    <string name="gro_status_mitigating">En mitigación</string>
+    <string name="gro_status_resolved">Resuelto</string>
+
+    <!-- GRO — accesibilidad -->
+    <string name="gro_a11y_swipe_to_resolve">Desliza para marcar el riesgo como resuelto</string>
+    <string name="gro_a11y_swipe_resolve_icon">Marcar riesgo como resuelto</string>
+    <string name="gro_a11y_risk_card">Elemento de la matriz de riesgos</string>
+    <string name="gro_a11y_severity_badge">Severidad del riesgo: %1$s</string>
+
+    <!-- GRO — línea de tiempo de hitos -->
+    <string name="gro_milestones_title">Línea de tiempo del proyecto</string>
+    <string name="gro_empty_milestones">No hay hitos programados para este proyecto.</string>
+    <string name="gro_date_format_pattern">dd MMM yyyy</string>
+
+    <!-- GRO — accesibilidad de hitos -->
+    <string name="gro_a11y_milestone_reached">Hito alcanzado: %1$s, fecha objetivo %2$s</string>
+    <string name="gro_a11y_milestone_pending">Hito pendiente: %1$s, fecha objetivo %2$s</string>
+    <string name="gro_a11y_toggle_milestone">Alternar estado de hito alcanzado</string>
+    <string name="gro_a11y_milestone_check_icon">Indicador de hito completado</string>
 </resources>
