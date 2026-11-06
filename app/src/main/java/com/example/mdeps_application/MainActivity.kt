@@ -39,6 +39,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.mdeps_application.gro.application.GroViewModel
+import com.example.mdeps_application.gro.data.OfflineFirstMilestoneRepository
+import com.example.mdeps_application.gro.data.OfflineFirstRiskRepository
+import com.example.mdeps_application.gro.data.local.GroDatabase
+import com.example.mdeps_application.gro.ui.MilestoneTimelineScreen
+import com.example.mdeps_application.gro.ui.RiskMatrixScreen
 import com.example.mdeps_application.iam.application.IamViewModel
 import com.example.mdeps_application.iam.data.DataStoreAuthRepository
 import com.example.mdeps_application.iam.data.iamAuthDataStore
@@ -71,9 +77,14 @@ class MainActivity : FragmentActivity() {
 // ───────────────────────── NAVEGACIÓN ─────────────────────────
 private const val ROUTE_CREATE = "create_project"
 private const val ROUTE_PROJECT_DETAILS = "project_details/{projectId}"
+private const val ROUTE_GRO_RISKS = "gro_risks/{projectId}"
+private const val ROUTE_GRO_MILESTONES = "gro_milestones/{projectId}"
 private const val ARG_PROJECT_ID = "projectId"
+private const val DEMO_GOVERNANCE_PROJECT_ID = 1L
 
 private fun projectDetailsRoute(projectId: Long): String = "project_details/$projectId"
+private fun groRisksRoute(projectId: Long): String = "gro_risks/$projectId"
+private fun groMilestonesRoute(projectId: Long): String = "gro_milestones/$projectId"
 
 private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     Home("home", "Home", Icons.Default.Home),
@@ -112,27 +123,43 @@ private fun MainShell() {
     }
     val ptoViewModel: PtoViewModel = viewModel(factory = PtoViewModel.factory(ptoRepository))
 
+    val groDatabase = remember {
+        GroDatabase.create(context.applicationContext)
+    }
+    val groViewModelFactory = remember {
+        GroViewModel.factory(
+            riskRepository = OfflineFirstRiskRepository(groDatabase.riskDao()),
+            milestoneRepository = OfflineFirstMilestoneRepository(groDatabase.milestoneDao()),
+        )
+    }
+
+    val onProjectFlow = destination?.route?.startsWith("project_details") == true
+    val onGroFlow = destination?.route?.startsWith("gro_") == true
+    val hideBottomBar = onProjectFlow || onGroFlow
+
     Scaffold(
         containerColor = Vx.Bg,
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
-                Tab.entries.forEach { tab ->
-                    val onProjectFlow = destination?.route?.startsWith("project_details") == true
-                    val selected = destination?.hierarchy?.any { it.route == tab.route } == true ||
-                        (tab == Tab.Projects && (destination?.route == ROUTE_CREATE || onProjectFlow))
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = { nav.navigateTab(tab.route) },
-                        icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label, fontSize = 11.sp) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Vx.Blue,
-                            selectedTextColor = Vx.Blue,
-                            indicatorColor = Vx.BlueSoft,
-                            unselectedIconColor = Vx.Muted,
-                            unselectedTextColor = Vx.Muted,
-                        ),
-                    )
+            if (!hideBottomBar) {
+                NavigationBar(containerColor = Color.White) {
+                    Tab.entries.forEach { tab ->
+                        val selected = destination?.hierarchy?.any { it.route == tab.route } == true ||
+                            (tab == Tab.Projects && (destination?.route == ROUTE_CREATE || onProjectFlow)) ||
+                            (tab == Tab.Governance && onGroFlow)
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = { nav.navigateTab(tab.route) },
+                            icon = { Icon(tab.icon, contentDescription = tab.label) },
+                            label = { Text(tab.label, fontSize = 11.sp) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Vx.Blue,
+                                selectedTextColor = Vx.Blue,
+                                indicatorColor = Vx.BlueSoft,
+                                unselectedIconColor = Vx.Muted,
+                                unselectedTextColor = Vx.Muted,
+                            ),
+                        )
+                    }
                 }
             }
         },
@@ -164,9 +191,56 @@ private fun MainShell() {
                 )
             }
             composable(Tab.Analytics.route) { AnalyticsScreen(goProfile) }
-            composable(Tab.Governance.route) { GovernanceScreen(goProfile) }
+            composable(Tab.Governance.route) {
+                GovernanceScreen(
+                    onProfile = goProfile,
+                    onOpenRiskMatrix = { projectId -> nav.navigate(groRisksRoute(projectId)) },
+                    onOpenMilestoneTimeline = { projectId -> nav.navigate(groMilestonesRoute(projectId)) },
+                    demoProjectId = DEMO_GOVERNANCE_PROJECT_ID,
+                )
+            }
             composable(Tab.Profile.route) { ProfileScreen() }
             composable(ROUTE_CREATE) { CreateProjectScreen(onClose = { nav.popBackStack() }) }
+            composable(
+                route = ROUTE_GRO_RISKS,
+                arguments = listOf(
+                    navArgument(ARG_PROJECT_ID) { type = NavType.LongType },
+                ),
+            ) { backStackEntry ->
+                val projectId = backStackEntry.arguments?.getLong(ARG_PROJECT_ID) ?: return@composable
+                val groViewModel: GroViewModel = viewModel(
+                    key = "gro_$projectId",
+                    factory = groViewModelFactory,
+                )
+                LaunchedEffect(projectId) {
+                    groViewModel.loadGovernanceData(projectId)
+                }
+                RiskMatrixScreen(
+                    viewModel = groViewModel,
+                    projectId = projectId,
+                    onNavigateBack = { nav.popBackStack() },
+                )
+            }
+            composable(
+                route = ROUTE_GRO_MILESTONES,
+                arguments = listOf(
+                    navArgument(ARG_PROJECT_ID) { type = NavType.LongType },
+                ),
+            ) { backStackEntry ->
+                val projectId = backStackEntry.arguments?.getLong(ARG_PROJECT_ID) ?: return@composable
+                val groViewModel: GroViewModel = viewModel(
+                    key = "gro_$projectId",
+                    factory = groViewModelFactory,
+                )
+                LaunchedEffect(projectId) {
+                    groViewModel.loadGovernanceData(projectId)
+                }
+                MilestoneTimelineScreen(
+                    viewModel = groViewModel,
+                    projectId = projectId,
+                    onNavigateBack = { nav.popBackStack() },
+                )
+            }
         }
     }
 }

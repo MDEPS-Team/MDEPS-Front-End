@@ -141,4 +141,11 @@
     <string name="gro_a11y_milestone_pending">Milestone pending: %1$s, target date %2$s</string>
     <string name="gro_a11y_toggle_milestone">Toggle milestone reached status</string>
     <string name="gro_a11y_milestone_check_icon">Milestone completed indicator</string>
+
+    <!-- GRO — governance demo navigation -->
+    <string name="gro_governance_open_risks">Open Risk Matrix (demo)</string>
+    <string name="gro_governance_open_milestones">Open Project Timeline (demo)</string>
+    <string name="gro_seed_demo_data">Load sample data</string>
+    <string name="gro_a11y_seed_demo_data">Load sample governance data for this project</string>
+    <string name="gro_a11y_navigate_back">Navigate back</string>
 </resources>
