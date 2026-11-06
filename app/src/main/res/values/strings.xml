@@ -1,3 +1,60 @@
 <resources>
     <string name="app_name">MDEPS_APPLICATION</string>
+
+    <!-- IAM Login -->
+    <string name="iam_login_title">Vantage PMO</string>
+    <string name="iam_login_subtitle">Project Management Office</string>
+    <string name="iam_login_corporate_email_label">Corporate email</string>
+    <string name="iam_login_password_label">Password</string>
+    <string name="iam_login_sign_in">Sign In</string>
+
+    <!-- IAM Login — accessibility -->
+    <string name="iam_a11y_email_icon">Corporate email field icon</string>
+    <string name="iam_a11y_password_icon">Password field icon</string>
+    <string name="iam_a11y_corporate_email_field">Corporate email input</string>
+    <string name="iam_a11y_password_field">Password input, characters hidden</string>
+    <string name="iam_a11y_sign_in_button">Sign in to your account</string>
+
+    <!-- IAM Biometric -->
+    <string name="iam_biometric_title">Sign in with Biometrics</string>
+    <string name="iam_biometric_subtitle">Confirm your identity using fingerprint or face unlock</string>
+    <string name="iam_biometric_cancel">Cancel</string>
+    <string name="iam_biometric_sign_in_action">Sign in with biometrics</string>
+    <string name="iam_biometric_success">Biometric authentication successful</string>
+    <string name="iam_biometric_error">Authentication failed: %1$s</string>
+    <string name="iam_biometric_unavailable">Biometric authentication is not available on this device</string>
+    <string name="iam_a11y_biometric_button">Sign in with biometrics</string>
+
+    <!-- IAM Profile -->
+    <string name="iam_profile_title">Profile</string>
+    <string name="iam_profile_metric_projects">14 Projects</string>
+    <string name="iam_profile_metric_sla">98.4% SLA</string>
+    <string name="iam_profile_metric_team">32 Team Members</string>
+    <string name="iam_profile_change_avatar">Change Avatar</string>
+    <string name="iam_profile_security_settings">Security Settings</string>
+    <string name="iam_profile_user_name">Alejandro Vance Rivas</string>
+    <string name="iam_profile_user_role">Senior Delivery &amp; PMO Director</string>
+    <string name="iam_profile_verified_badge">Verified corporate ID</string>
+    <string name="iam_profile_avatar_updated">Profile photo updated</string>
+
+    <!-- IAM Profile — accessibility -->
+    <string name="iam_a11y_profile_avatar">Profile avatar image</string>
+    <string name="iam_a11y_profile_metric_projects">Projects metric: 14 projects</string>
+    <string name="iam_a11y_profile_metric_sla">SLA adherence metric: 98.4 percent</string>
+    <string name="iam_a11y_profile_metric_team">Team metric: 32 team members</string>
+    <string name="iam_a11y_change_avatar_button">Change profile avatar from gallery</string>
+    <string name="iam_a11y_security_settings_button">Open security settings</string>
+
+    <!-- IAM Security sheet -->
+    <string name="iam_security_sheet_title">Security Settings</string>
+    <string name="iam_security_change_email">Change corporate email</string>
+    <string name="iam_security_view_id">View employee ID</string>
+    <string name="iam_security_change_2fa">Change two-factor authentication</string>
+    <string name="iam_security_employee_id_label">Employee ID</string>
+    <string name="iam_security_employee_id_value">#ENT-88492-SEC</string>
+    <string name="iam_security_close">Close</string>
+    <string name="iam_a11y_security_close">Close security settings</string>
+    <string name="iam_a11y_security_change_email">Change corporate email option</string>
+    <string name="iam_a11y_security_view_id">View employee ID option</string>
+    <string name="iam_a11y_security_change_2fa">Change two-factor authentication option</string>
 </resources>
