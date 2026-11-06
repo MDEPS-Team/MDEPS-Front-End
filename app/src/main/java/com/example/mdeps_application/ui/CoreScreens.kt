@@ -41,11 +41,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.mdeps_application.R
 
 // ───────────────────────── MOCK DATA ─────────────────────────
 data class Project(val name: String, val status: String, val progress: Float, val owner: String)
@@ -176,7 +178,12 @@ fun ProjectsScreen(onCreate: () -> Unit, onProfile: () -> Unit) {
 
 // ───────────────────────── GOVERNANCE ─────────────────────────
 @Composable
-fun GovernanceScreen(onProfile: () -> Unit) {
+fun GovernanceScreen(
+    onProfile: () -> Unit,
+    onOpenRiskMatrix: (Long) -> Unit,
+    onOpenMilestoneTimeline: (Long) -> Unit,
+    demoProjectId: Long,
+) {
     val controls = remember3()
     Column(Modifier.fillMaxSize().background(Vx.Bg)) {
         VxTopBar(
@@ -187,6 +194,28 @@ fun GovernanceScreen(onProfile: () -> Unit) {
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Button(
+                onClick = { onOpenRiskMatrix(demoProjectId) },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Vx.Blue),
+            ) {
+                Text(
+                    text = stringResource(R.string.gro_governance_open_risks),
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Button(
+                onClick = { onOpenMilestoneTimeline(demoProjectId) },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Vx.Blue),
+            ) {
+                Text(
+                    text = stringResource(R.string.gro_governance_open_milestones),
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             controls.forEach { (title, desc, initial) ->
                 var on by rememberSaveable(title) { mutableStateOf(initial) }
                 VxCard(Modifier.fillMaxWidth(), onClick = { on = !on }) {

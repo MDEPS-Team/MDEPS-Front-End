@@ -8,25 +8,62 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mdeps_application.R
+import com.example.mdeps_application.gro.application.GroViewModel
 import com.example.mdeps_application.gro.domain.Milestone
 import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
 
 @Composable
 fun MilestoneTimelineScreen(
+    viewModel: GroViewModel,
+    projectId: Long,
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val milestones by viewModel.milestonesState.collectAsStateWithLifecycle()
+    val navigateBackDescription = stringResource(R.string.gro_a11y_navigate_back)
+    val seedDemoDescription = stringResource(R.string.gro_a11y_seed_demo_data)
+
+    MilestoneTimelineContent(
+        milestones = milestones,
+        onMilestoneToggled = viewModel::toggleMilestone,
+        onNavigateBack = onNavigateBack,
+        onSeedDemoData = { viewModel.addCorporateDummyData(projectId) },
+        navigateBackDescription = navigateBackDescription,
+        seedDemoDescription = seedDemoDescription,
+        modifier = modifier,
+    )
+}
+
+@Composable
+internal fun MilestoneTimelineContent(
     milestones: List<Milestone>,
     onMilestoneToggled: (Milestone) -> Unit,
+    onNavigateBack: () -> Unit,
+    onSeedDemoData: () -> Unit,
+    navigateBackDescription: String,
+    seedDemoDescription: String,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -39,7 +76,40 @@ fun MilestoneTimelineScreen(
                         fontWeight = FontWeight.Bold,
                     )
                 },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier.semantics { contentDescription = navigateBackDescription },
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = navigateBackDescription,
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = onSeedDemoData,
+                        modifier = Modifier.semantics { contentDescription = seedDemoDescription },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = seedDemoDescription,
+                        )
+                    }
+                },
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onSeedDemoData,
+                modifier = Modifier.semantics { contentDescription = seedDemoDescription },
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = seedDemoDescription,
+                )
+            }
         },
     ) { innerPadding ->
         if (milestones.isEmpty()) {
@@ -79,7 +149,7 @@ fun MilestoneTimelineScreen(
 @Composable
 private fun MilestoneTimelineScreenPreview() {
     MDEPS_APPLICATIONTheme {
-        MilestoneTimelineScreen(
+        MilestoneTimelineContent(
             milestones = listOf(
                 Milestone(
                     id = 1L,
@@ -88,15 +158,12 @@ private fun MilestoneTimelineScreenPreview() {
                     targetDate = 1_735_084_800_000L,
                     isReached = true,
                 ),
-                Milestone(
-                    id = 2L,
-                    projectId = 1L,
-                    title = "UAT sign-off",
-                    targetDate = 1_736_121_600_000L,
-                    isReached = false,
-                ),
             ),
             onMilestoneToggled = {},
+            onNavigateBack = {},
+            onSeedDemoData = {},
+            navigateBackDescription = "Back",
+            seedDemoDescription = "Seed",
         )
     }
 }

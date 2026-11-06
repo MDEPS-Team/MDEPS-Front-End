@@ -141,4 +141,11 @@
     <string name="gro_a11y_milestone_pending">Hito pendiente: %1$s, fecha objetivo %2$s</string>
     <string name="gro_a11y_toggle_milestone">Alternar estado de hito alcanzado</string>
     <string name="gro_a11y_milestone_check_icon">Indicador de hito completado</string>
+
+    <!-- GRO — navegación demo de gobernanza -->
+    <string name="gro_governance_open_risks">Abrir matriz de riesgos (demo)</string>
+    <string name="gro_governance_open_milestones">Abrir línea de tiempo (demo)</string>
+    <string name="gro_seed_demo_data">Cargar datos de ejemplo</string>
+    <string name="gro_a11y_seed_demo_data">Cargar datos de gobernanza de ejemplo para este proyecto</string>
+    <string name="gro_a11y_navigate_back">Volver</string>
 </resources>

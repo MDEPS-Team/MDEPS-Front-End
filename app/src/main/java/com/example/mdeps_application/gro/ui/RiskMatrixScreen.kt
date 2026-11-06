@@ -13,9 +13,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwipeToDismissBox
@@ -24,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,7 +38,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mdeps_application.R
+import com.example.mdeps_application.gro.application.GroViewModel
 import com.example.mdeps_application.gro.domain.Risk
 import com.example.mdeps_application.gro.domain.RiskSeverity
 import com.example.mdeps_application.gro.domain.RiskStatus
@@ -43,8 +50,34 @@ private val SwipeResolveBackgroundGreen = Color(0xFF2E7D32)
 
 @Composable
 fun RiskMatrixScreen(
+    viewModel: GroViewModel,
+    projectId: Long,
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val risks by viewModel.risksState.collectAsStateWithLifecycle()
+    val navigateBackDescription = stringResource(R.string.gro_a11y_navigate_back)
+    val seedDemoDescription = stringResource(R.string.gro_a11y_seed_demo_data)
+
+    RiskMatrixContent(
+        risks = risks,
+        onRiskSwiped = viewModel::resolveRisk,
+        onNavigateBack = onNavigateBack,
+        onSeedDemoData = { viewModel.addCorporateDummyData(projectId) },
+        navigateBackDescription = navigateBackDescription,
+        seedDemoDescription = seedDemoDescription,
+        modifier = modifier,
+    )
+}
+
+@Composable
+internal fun RiskMatrixContent(
     risks: List<Risk>,
     onRiskSwiped: (Risk) -> Unit,
+    onNavigateBack: () -> Unit,
+    onSeedDemoData: () -> Unit,
+    navigateBackDescription: String,
+    seedDemoDescription: String,
     modifier: Modifier = Modifier,
 ) {
     val swipeToResolveDescription = stringResource(R.string.gro_a11y_swipe_to_resolve)
@@ -61,7 +94,40 @@ fun RiskMatrixScreen(
                         fontWeight = FontWeight.Bold,
                     )
                 },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier.semantics { contentDescription = navigateBackDescription },
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = navigateBackDescription,
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = onSeedDemoData,
+                        modifier = Modifier.semantics { contentDescription = seedDemoDescription },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = seedDemoDescription,
+                        )
+                    }
+                },
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onSeedDemoData,
+                modifier = Modifier.semantics { contentDescription = seedDemoDescription },
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = seedDemoDescription,
+                )
+            }
         },
     ) { innerPadding ->
         if (risks.isEmpty()) {
@@ -153,7 +219,7 @@ private fun SwipeableRiskRow(
 @Composable
 private fun RiskMatrixScreenPreview() {
     MDEPS_APPLICATIONTheme {
-        RiskMatrixScreen(
+        RiskMatrixContent(
             risks = listOf(
                 Risk(
                     id = 1L,
@@ -163,16 +229,12 @@ private fun RiskMatrixScreenPreview() {
                     severity = RiskSeverity.CRITICAL,
                     status = RiskStatus.IDENTIFIED,
                 ),
-                Risk(
-                    id = 2L,
-                    projectId = 1L,
-                    title = "Resource availability",
-                    description = "Two senior engineers allocated to a parallel initiative.",
-                    severity = RiskSeverity.MEDIUM,
-                    status = RiskStatus.MITIGATING,
-                ),
             ),
             onRiskSwiped = {},
+            onNavigateBack = {},
+            onSeedDemoData = {},
+            navigateBackDescription = "Back",
+            seedDemoDescription = "Seed",
         )
     }
 }
