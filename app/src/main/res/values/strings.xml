@@ -67,8 +67,44 @@
     <string name="home_kpi_pending_tasks_label">Pending tasks</string>
     <string name="home_kpi_pending_tasks_value">%1$d</string>
     <string name="home_a11y_open_profile">Open profile</string>
+    <string name="home_command_center_title">Command Center</string>
+    <string name="home_command_center_subtitle">%1$d active initiatives · %2$d open tasks</string>
+    <string name="home_hero_eyebrow">EXECUTIVE SNAPSHOT</string>
+    <string name="home_greeting">Hello, %1$s</string>
+    <string name="home_greeting_fallback_name">PMO Lead</string>
+    <string name="home_hero_subtitle">Portfolio pulse, escalations, and momentum in one view.</string>
+    <string name="home_hero_health_score">Health</string>
+    <string name="home_hero_health_value">%1$d%%</string>
+    <string name="home_hero_efficiency">Efficiency</string>
+    <string name="home_hero_efficiency_value">%1$d%%</string>
+    <string name="home_hero_critical_risks">Critical</string>
+    <string name="home_status_mix_title">Portfolio mix</string>
+    <string name="home_launch_projects">Registry</string>
+    <string name="home_launch_analytics">Analytics</string>
+    <string name="home_launch_governance">Governance</string>
+    <string name="home_section_critical">Critical spotlight</string>
+    <string name="home_section_critical_sub">Initiatives flagged at risk — intervene first.</string>
+    <string name="home_no_critical_projects">No projects are flagged at risk. Momentum looks stable.</string>
+    <string name="home_section_momentum">Delivery momentum</string>
+    <string name="home_section_momentum_sub">Swipe through active delivery tracks.</string>
+    <string name="home_section_risk_radar">Risk radar</string>
+    <string name="home_section_risk_radar_sub">Live high-severity exposure across the portfolio.</string>
+    <string name="home_open_full_registry">Open full project registry →</string>
 
     <string name="pto_projects_title">Projects</string>
+    <string name="pto_registry_title">Project registry</string>
+    <string name="pto_registry_subtitle">%1$d records · %2$d at risk</string>
+    <string name="pto_registry_new_initiative">New initiative</string>
+    <string name="pto_registry_search_hint">Search by name or description</string>
+    <string name="pto_registry_show_completed">Show completed</string>
+    <string name="pto_registry_sort_status">Status</string>
+    <string name="pto_registry_sort_name">Name</string>
+    <string name="pto_registry_sort_progress">Progress</string>
+    <string name="pto_registry_stat_total">Total</string>
+    <string name="pto_registry_stat_at_risk">At risk</string>
+    <string name="pto_registry_stat_open_tasks">Open tasks</string>
+    <string name="pto_project_progress_percent">%1$d%%</string>
+    <string name="pto_project_task_summary">%1$d of %2$d tasks open</string>
     <string name="pto_project_tasks_title">Project Tasks</string>
     <string name="pto_hub_tab_tasks">Tasks</string>
     <string name="pto_hub_tab_risks">Risks</string>
@@ -159,14 +195,64 @@
 
     <string name="gro_governance_select_project">Please select a project on Home to manage its governance.</string>
     <string name="gro_governance_tab_title">Governance</string>
+    <string name="gro_governance_hub_title">Governance hub</string>
+    <string name="gro_governance_hub_subtitle">Escalations, controls, and intervention queue</string>
+    <string name="gro_governance_interventions_title">INTERVENTION QUEUE</string>
+    <string name="gro_governance_interventions_sub">Open risks or timelines directly from escalated initiatives.</string>
+    <string name="gro_governance_no_escalations">No escalations right now. Portfolio controls are green.</string>
+    <string name="gro_governance_kpi_at_risk">At-risk projects</string>
+    <string name="gro_governance_kpi_critical">Critical risks</string>
+    <string name="gro_governance_kpi_exposure">High-risk projects</string>
+    <string name="gro_governance_card_detail">%1$d open tasks · %2$d%% complete</string>
+    <string name="gro_governance_high_risk_count">%1$d active high/critical risks</string>
+    <string name="gro_governance_open_risks">Risk matrix</string>
+    <string name="gro_governance_open_timeline">Timeline</string>
+    <string name="gro_governance_policies_title">POLICY CONTROLS</string>
+    <string name="gro_policy_soc2_title">SOC2 / ISO 27001</string>
+    <string name="gro_policy_soc2_desc">Continuous evidence for audit readiness</string>
+    <string name="gro_policy_gates_title">Gate reviews</string>
+    <string name="gro_policy_gates_desc">Mandatory phase approval checkpoints</string>
+    <string name="gro_policy_budget_title">Budget guardrails</string>
+    <string name="gro_policy_budget_desc">Alert when spend exceeds 90% of cap</string>
 
-    <!-- GRO — governance demo navigation -->
-    <string name="gro_governance_open_risks">Open Risk Matrix (demo)</string>
-    <string name="gro_governance_open_milestones">Open Project Timeline (demo)</string>
+    <string name="gro_governance_open_milestones">Open timeline</string>
     <string name="gro_seed_demo_data">Load sample data</string>
     <string name="gro_a11y_seed_demo_data">Load sample governance data for this project</string>
     <string name="gro_a11y_navigate_back">Navigate back</string>
     <string name="gro_action_completed_success">Action completed successfully</string>
+    <string name="gro_snackbar_undo">Undo</string>
+
+    <string name="portfolio_filter_all">All</string>
+    <string name="portfolio_filter_at_risk">At risk</string>
+    <string name="portfolio_filter_in_progress">In progress</string>
+    <string name="portfolio_last_updated">Updated at %1$s</string>
+
+    <string name="pto_attention_hub_title">Needs attention</string>
+    <string name="pto_attention_pending_tasks_chip">Pending tasks: %1$d</string>
+    <string name="pto_attention_high_risks_chip">High risks: %1$d</string>
+    <string name="pto_attention_milestones_chip">Upcoming milestones: %1$d</string>
+    <string name="pto_attention_all_clear">Everything looks on track for this project.</string>
+    <string name="pto_quick_actions_title">Quick actions</string>
+    <string name="pto_quick_action_add_task">Add task</string>
+    <string name="pto_quick_action_log_risk">Log risk</string>
+    <string name="pto_quick_action_add_milestone">Add milestone</string>
+    <string name="pto_quick_action_risk_title">Risk title</string>
+    <string name="pto_quick_action_risk_description">Risk description</string>
+    <string name="pto_quick_action_milestone_title">Milestone title</string>
+
+    <string name="ass_risk_drilldown_title">Projects with high risks</string>
+    <string name="ass_risk_drilldown_empty">No active high or critical risks right now.</string>
+    <string name="ass_risk_drilldown_row">%1$s · %2$d risks</string>
+
+    <string name="onboarding_step_one_title">Welcome to Vantage PMO</string>
+    <string name="onboarding_step_one_body">Your portfolio, tasks, and governance live in one place.</string>
+    <string name="onboarding_step_two_title">Open a project hub</string>
+    <string name="onboarding_step_two_body">From Home, tap a project to manage tasks, risks, and milestones.</string>
+    <string name="onboarding_step_three_title">Track corporate KPIs</string>
+    <string name="onboarding_step_three_body">Use Analytics to review live efficiency and risk exposure.</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_finish">Get started</string>
 
     <!-- ASS — analytics -->
     <string name="ass_analytics_title">Analytics</string>

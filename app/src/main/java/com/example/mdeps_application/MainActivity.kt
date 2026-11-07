@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -63,11 +64,16 @@ import com.example.mdeps_application.pto.data.local.PtoDatabase
 import com.example.mdeps_application.pto.ui.HomeScreen
 import com.example.mdeps_application.pto.ui.ProjectDetailScreen
 import com.example.mdeps_application.pto.ui.ProjectListScreen
+import com.example.mdeps_application.app.data.OnboardingStore
+import com.example.mdeps_application.app.data.onboardingDataStore
+import com.example.mdeps_application.gro.ui.GovernanceHubScreen
 import com.example.mdeps_application.ui.CreateProjectScreen
-import com.example.mdeps_application.ui.GovernanceScreen
 import com.example.mdeps_application.ui.LocalAppSnackbarHostState
+import com.example.mdeps_application.ui.OnboardingDialog
 import com.example.mdeps_application.ui.Vx
 import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -162,6 +168,11 @@ private fun MainShell() {
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val onboardingStore = remember { OnboardingStore(context.onboardingDataStore) }
+    val onboardingCompleted by onboardingStore.hasCompletedOnboarding()
+        .collectAsStateWithLifecycle(initialValue = false)
+    var onboardingStep by rememberSaveable { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
 
     CompositionLocalProvider(LocalAppSnackbarHostState provides snackbarHostState) {
         Scaffold(
@@ -193,24 +204,30 @@ private fun MainShell() {
         },
     ) { inner ->
         val goProfile = { nav.navigateTab(Tab.Profile.route) }
+        val iamState by iamViewModel.uiState.collectAsStateWithLifecycle()
+        val displayName = iamState.user?.name
+        val openProject: (Long) -> Unit = { projectId ->
+            nav.navigate(projectDetailsRoute(projectId)) {
+                launchSingleTop = true
+            }
+        }
         NavHost(nav, startDestination = Tab.Home.route, modifier = Modifier.padding(inner)) {
             composable(Tab.Home.route) {
                 HomeScreen(
                     viewModel = ptoViewModel,
-                    onProjectClick = { projectId ->
-                        nav.navigate(projectDetailsRoute(projectId)) {
-                            launchSingleTop = true
-                        }
-                    },
+                    analyticsViewModel = analyticsViewModel,
+                    userDisplayName = displayName,
+                    onProjectClick = openProject,
+                    onOpenProjects = { nav.navigateTab(Tab.Projects.route) },
+                    onOpenAnalytics = { nav.navigateTab(Tab.Analytics.route) },
+                    onOpenGovernance = { nav.navigateTab(Tab.Governance.route) },
                     onProfile = goProfile,
                 )
             }
             composable(Tab.Projects.route) {
                 ProjectListScreen(
                     viewModel = ptoViewModel,
-                    onProjectClick = { projectId ->
-                        nav.navigate(projectDetailsRoute(projectId))
-                    },
+                    onProjectClick = openProject,
                 )
             }
             composable(
@@ -220,17 +237,23 @@ private fun MainShell() {
                 ),
             ) { backStackEntry ->
                 val projectId = backStackEntry.arguments?.getLong(ARG_PROJECT_ID) ?: return@composable
+                val groViewModel: GroViewModel = viewModel(
+                    key = "gro_$projectId",
+                    factory = groViewModelFactory,
+                )
                 LaunchedEffect(projectId) {
                     ptoViewModel.loadProjectDetails(projectId)
+                    groViewModel.loadGovernanceData(projectId)
                 }
                 ProjectDetailScreen(
                     viewModel = ptoViewModel,
+                    groViewModel = groViewModel,
                     onNavigateBack = { nav.popBackStack() },
-                    onNavigateToRisks = { projectId ->
-                        nav.navigateToGroRisks(projectId)
+                    onNavigateToRisks = { id ->
+                        nav.navigateToGroRisks(id)
                     },
-                    onNavigateToMilestones = { projectId ->
-                        nav.navigateToGroMilestones(projectId)
+                    onNavigateToMilestones = { id ->
+                        nav.navigateToGroMilestones(id)
                     },
                 )
             }
@@ -238,11 +261,29 @@ private fun MainShell() {
                 AnalyticsScreen(
                     viewModel = analyticsViewModel,
                     onProfile = goProfile,
+                    onOpenProjectRisks = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) {
+                            launchSingleTop = true
+                        }
+                        nav.navigateToGroRisks(projectId)
+                    },
                     animationNonce = analyticsVisitNonce,
                 )
             }
             composable(Tab.Governance.route) {
-                GovernanceScreen(onProfile = goProfile)
+                GovernanceHubScreen(
+                    ptoViewModel = ptoViewModel,
+                    analyticsViewModel = analyticsViewModel,
+                    onOpenProjectRisks = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) { launchSingleTop = true }
+                        nav.navigateToGroRisks(projectId)
+                    },
+                    onOpenProjectMilestones = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) { launchSingleTop = true }
+                        nav.navigateToGroMilestones(projectId)
+                    },
+                    onProfile = goProfile,
+                )
             }
             composable(Tab.Profile.route) {
                 ProfileScreen(viewModel = iamViewModel)
@@ -289,6 +330,19 @@ private fun MainShell() {
                 )
             }
         }
+    }
+
+        if (!onboardingCompleted) {
+            OnboardingDialog(
+                step = onboardingStep,
+                onNext = { onboardingStep++ },
+                onFinish = {
+                    scope.launch { onboardingStore.setOnboardingCompleted() }
+                },
+                onSkip = {
+                    scope.launch { onboardingStore.setOnboardingCompleted() }
+                },
+            )
         }
     }
 }

@@ -20,6 +20,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+private sealed interface GroUndoAction {
+    data class ResolvedRisk(val previous: Risk) : GroUndoAction
+    data class ToggledMilestone(val previous: Milestone) : GroUndoAction
+}
+
 class GroViewModel(
     private val riskRepository: RiskRepository,
     private val milestoneRepository: MilestoneRepository,
@@ -35,6 +40,7 @@ class GroViewModel(
     val uiEvents: SharedFlow<GroUiEvent> = _uiEvents.asSharedFlow()
 
     private var governanceJob: Job? = null
+    private var pendingUndo: GroUndoAction? = null
 
     fun loadGovernanceData(projectId: Long) {
         governanceJob?.cancel()
@@ -57,21 +63,70 @@ class GroViewModel(
     }
 
     fun resolveRisk(risk: Risk) {
+        pendingUndo = GroUndoAction.ResolvedRisk(risk)
         _risksState.update { current -> current.filter { it.id != risk.id } }
         viewModelScope.launch {
             riskRepository.updateRisk(risk.copy(status = RiskStatus.RESOLVED))
-            _uiEvents.emit(GroUiEvent.ActionCompleted)
+            _uiEvents.emit(GroUiEvent.ActionCompleted(canUndo = true))
         }
     }
 
     fun toggleMilestone(milestone: Milestone) {
+        pendingUndo = GroUndoAction.ToggledMilestone(milestone)
         val toggled = milestone.copy(isReached = !milestone.isReached)
         _milestonesState.update { current ->
             current.map { item -> if (item.id == milestone.id) toggled else item }
         }
         viewModelScope.launch {
             milestoneRepository.updateMilestone(toggled)
-            _uiEvents.emit(GroUiEvent.ActionCompleted)
+            _uiEvents.emit(GroUiEvent.ActionCompleted(canUndo = true))
+        }
+    }
+
+    fun undoLastAction() {
+        val undo = pendingUndo ?: return
+        pendingUndo = null
+        viewModelScope.launch {
+            when (undo) {
+                is GroUndoAction.ResolvedRisk -> {
+                    riskRepository.updateRisk(undo.previous)
+                }
+                is GroUndoAction.ToggledMilestone -> {
+                    milestoneRepository.updateMilestone(undo.previous)
+                }
+            }
+            _uiEvents.emit(GroUiEvent.ActionCompleted(canUndo = false))
+        }
+    }
+
+    fun quickAddRisk(projectId: Long, title: String, description: String) {
+        viewModelScope.launch {
+            riskRepository.insertRisk(
+                Risk(
+                    id = 0L,
+                    projectId = projectId,
+                    title = title,
+                    description = description,
+                    severity = RiskSeverity.HIGH,
+                    status = RiskStatus.IDENTIFIED,
+                ),
+            )
+            _uiEvents.emit(GroUiEvent.ActionCompleted(canUndo = false))
+        }
+    }
+
+    fun quickAddMilestone(projectId: Long, title: String, targetDate: Long) {
+        viewModelScope.launch {
+            milestoneRepository.insertMilestone(
+                Milestone(
+                    id = 0L,
+                    projectId = projectId,
+                    title = title,
+                    targetDate = targetDate,
+                    isReached = false,
+                ),
+            )
+            _uiEvents.emit(GroUiEvent.ActionCompleted(canUndo = false))
         }
     }
 
@@ -107,6 +162,7 @@ class GroViewModel(
                     isReached = false,
                 ),
             )
+            _uiEvents.emit(GroUiEvent.ActionCompleted(canUndo = false))
         }
     }
 

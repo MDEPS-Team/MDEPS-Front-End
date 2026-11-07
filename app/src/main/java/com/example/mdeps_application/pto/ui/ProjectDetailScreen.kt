@@ -63,6 +63,11 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mdeps_application.R
+import com.example.mdeps_application.gro.application.GroViewModel
+import com.example.mdeps_application.gro.domain.Milestone
+import com.example.mdeps_application.gro.domain.Risk
+import com.example.mdeps_application.gro.domain.RiskSeverity
+import com.example.mdeps_application.gro.ui.CollectGroUiEvents
 import com.example.mdeps_application.pto.application.ProjectPdfExporter
 import com.example.mdeps_application.pto.application.PtoViewModel
 import com.example.mdeps_application.pto.domain.Project
@@ -78,11 +83,15 @@ private enum class ProjectHubTab {
 @Composable
 fun ProjectDetailScreen(
     viewModel: PtoViewModel,
+    groViewModel: GroViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToRisks: (Long) -> Unit,
     onNavigateToMilestones: (Long) -> Unit,
 ) {
+    CollectGroUiEvents(viewModel = groViewModel)
     val detailState by viewModel.projectDetailState.collectAsStateWithLifecycle()
+    val risks by groViewModel.risksState.collectAsStateWithLifecycle()
+    val milestones by groViewModel.milestonesState.collectAsStateWithLifecycle()
     val project = detailState.project
     val tasks = detailState.tasks
 
@@ -103,6 +112,8 @@ fun ProjectDetailScreen(
     ProjectDetailContent(
         project = project,
         tasks = tasks,
+        risks = risks,
+        milestones = milestones,
         onNavigateBack = onNavigateBack,
         onNavigateToRisks = { onNavigateToRisks(project.id) },
         onNavigateToMilestones = { onNavigateToMilestones(project.id) },
@@ -111,6 +122,13 @@ fun ProjectDetailScreen(
                 projectId = project.id,
                 title = "Task ${tasks.size + 1}",
             )
+        },
+        onQuickAddRisk = { title, description ->
+            groViewModel.quickAddRisk(project.id, title, description)
+        },
+        onQuickAddMilestone = { title ->
+            val targetDate = System.currentTimeMillis() + (7L * 86_400_000L)
+            groViewModel.quickAddMilestone(project.id, title, targetDate)
         },
         onTaskCompletedChange = { task, _ ->
             viewModel.toggleTaskStatus(task)
@@ -125,14 +143,30 @@ fun ProjectDetailScreen(
 private fun ProjectDetailContent(
     project: Project,
     tasks: List<Task>,
+    risks: List<Risk>,
+    milestones: List<Milestone>,
     onNavigateBack: () -> Unit,
     onNavigateToRisks: () -> Unit,
     onNavigateToMilestones: () -> Unit,
     onAddTaskClick: () -> Unit,
+    onQuickAddRisk: (String, String) -> Unit,
+    onQuickAddMilestone: (String) -> Unit,
     onTaskCompletedChange: (Task, Boolean) -> Unit,
     onEvidencePhotoCaptured: (Task, String) -> Unit,
 ) {
     var selectedHubTab by rememberSaveable { mutableIntStateOf(ProjectHubTab.TASKS.ordinal) }
+    var showQuickActions by rememberSaveable { mutableStateOf(false) }
+    val upcomingWindow = remember { 14L * 86_400_000L }
+    val now = System.currentTimeMillis()
+    val attentionSnapshot = ProjectAttentionSnapshot(
+        pendingTasks = tasks.count { !it.isCompleted },
+        highRisks = risks.count {
+            it.severity == RiskSeverity.HIGH || it.severity == RiskSeverity.CRITICAL
+        },
+        upcomingMilestones = milestones.count { milestone ->
+            !milestone.isReached && milestone.targetDate <= now + upcomingWindow
+        },
+    )
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -230,7 +264,7 @@ private fun ProjectDetailContent(
             },
             floatingActionButton = {
                 FloatingActionButton(
-                    onClick = onAddTaskClick,
+                    onClick = { showQuickActions = true },
                     modifier = Modifier.semantics { contentDescription = addTaskDescription },
                 ) {
                     Icon(
@@ -249,6 +283,14 @@ private fun ProjectDetailContent(
             ) {
                 item {
                     ProjectSummaryCard(project = project)
+                }
+                item {
+                    ProjectAttentionHub(
+                        snapshot = attentionSnapshot,
+                        onPendingTasksClick = { selectedHubTab = ProjectHubTab.TASKS.ordinal },
+                        onHighRisksClick = onNavigateToRisks,
+                        onUpcomingMilestonesClick = onNavigateToMilestones,
+                    )
                 }
                 item {
                     PrimaryTabRow(selectedTabIndex = selectedHubTab) {
@@ -303,6 +345,14 @@ private fun ProjectDetailContent(
                 }
             }
         }
+
+        ProjectQuickActionsSheet(
+            visible = showQuickActions,
+            onDismiss = { showQuickActions = false },
+            onAddTask = onAddTaskClick,
+            onAddRisk = onQuickAddRisk,
+            onAddMilestone = onQuickAddMilestone,
+        )
 
         if (showCameraScreen && activeTaskForCamera != null) {
             CameraScreen(
