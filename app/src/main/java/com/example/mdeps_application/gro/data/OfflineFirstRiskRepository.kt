@@ -10,6 +10,11 @@ class OfflineFirstRiskRepository(
     private val riskDao: RiskDao,
 ) : RiskRepository {
 
+    override fun observeAllRisks(): Flow<List<Risk>> =
+        riskDao.observeAllRisks().map { entities ->
+            entities.map { it.toDomain() }
+        }
+
     override fun observeRisksByProjectId(projectId: Long): Flow<List<Risk>> =
         riskDao.observeRisksByProjectId(projectId).map { entities ->
             entities.map { it.toDomain() }

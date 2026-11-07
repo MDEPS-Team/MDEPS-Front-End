@@ -10,6 +10,11 @@ class OfflineFirstMilestoneRepository(
     private val milestoneDao: MilestoneDao,
 ) : MilestoneRepository {
 
+    override fun observeAllMilestones(): Flow<List<Milestone>> =
+        milestoneDao.observeAllMilestones().map { entities ->
+            entities.map { it.toDomain() }
+        }
+
     override fun observeMilestonesByProjectId(projectId: Long): Flow<List<Milestone>> =
         milestoneDao.observeMilestonesByProjectId(projectId).map { entities ->
             entities.map { it.toDomain() }

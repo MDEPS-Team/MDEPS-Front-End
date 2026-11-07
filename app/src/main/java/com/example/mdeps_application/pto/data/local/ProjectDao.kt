@@ -35,6 +35,9 @@ interface ProjectDao {
     @Query("DELETE FROM projects WHERE id = :projectId")
     suspend fun deleteProjectById(projectId: Long)
 
+    @Query("SELECT * FROM tasks ORDER BY id ASC")
+    fun observeAllTasks(): Flow<List<TaskEntity>>
+
     @Query("SELECT * FROM tasks WHERE project_id = :projectId ORDER BY id ASC")
     fun observeTasksByProjectId(projectId: Long): Flow<List<TaskEntity>>
 

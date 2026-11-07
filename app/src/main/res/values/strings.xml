@@ -166,4 +166,19 @@
     <string name="gro_seed_demo_data">Load sample data</string>
     <string name="gro_a11y_seed_demo_data">Load sample governance data for this project</string>
     <string name="gro_a11y_navigate_back">Navigate back</string>
+
+    <!-- ASS — analytics -->
+    <string name="ass_analytics_title">Analytics</string>
+    <string name="ass_analytics_subtitle">INTELLIGENCE SUITE</string>
+    <string name="ass_analytics_headline">Corporate delivery insights</string>
+    <string name="ass_global_progress_label">Portfolio delivery progress</string>
+    <string name="ass_global_progress_value">%1$d%% blended tasks and milestones</string>
+    <string name="ass_operative_efficiency_label">Operative efficiency</string>
+    <string name="ass_operative_efficiency_value">%1$.1f%%</string>
+    <string name="ass_critical_risks_label">Active high risks</string>
+    <string name="ass_critical_risks_value">%1$d</string>
+    <string name="ass_data_disclaimer">Metrics are computed live from PTO tasks and GRO governance data.</string>
+    <string name="ass_a11y_global_progress">Portfolio progress at %1$d percent</string>
+    <string name="ass_a11y_operative_efficiency">Operative efficiency at %1$.1f percent</string>
+    <string name="ass_a11y_critical_risks">%1$d active high or critical risks</string>
 </resources>

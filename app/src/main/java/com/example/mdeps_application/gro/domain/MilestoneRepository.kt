@@ -4,6 +4,8 @@ import kotlinx.coroutines.flow.Flow
 
 interface MilestoneRepository {
 
+    fun observeAllMilestones(): Flow<List<Milestone>>
+
     fun observeMilestonesByProjectId(projectId: Long): Flow<List<Milestone>>
 
     suspend fun insertMilestone(milestone: Milestone): Long

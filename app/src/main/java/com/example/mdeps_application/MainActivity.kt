@@ -39,6 +39,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.mdeps_application.ass.application.AnalyticsViewModel
+import com.example.mdeps_application.ass.ui.AnalyticsScreen
 import com.example.mdeps_application.gro.application.GroViewModel
 import com.example.mdeps_application.gro.data.OfflineFirstMilestoneRepository
 import com.example.mdeps_application.gro.data.OfflineFirstRiskRepository
@@ -56,7 +58,6 @@ import com.example.mdeps_application.pto.data.local.PtoDatabase
 import com.example.mdeps_application.pto.ui.HomeScreen
 import com.example.mdeps_application.pto.ui.ProjectDetailScreen
 import com.example.mdeps_application.pto.ui.ProjectListScreen
-import com.example.mdeps_application.ui.AnalyticsScreen
 import com.example.mdeps_application.ui.CreateProjectScreen
 import com.example.mdeps_application.ui.GovernanceScreen
 import com.example.mdeps_application.ui.Vx
@@ -127,12 +128,21 @@ private fun MainShell() {
     val groDatabase = remember {
         GroDatabase.create(context.applicationContext)
     }
+    val riskRepository = remember { OfflineFirstRiskRepository(groDatabase.riskDao()) }
+    val milestoneRepository = remember { OfflineFirstMilestoneRepository(groDatabase.milestoneDao()) }
     val groViewModelFactory = remember {
         GroViewModel.factory(
-            riskRepository = OfflineFirstRiskRepository(groDatabase.riskDao()),
-            milestoneRepository = OfflineFirstMilestoneRepository(groDatabase.milestoneDao()),
+            riskRepository = riskRepository,
+            milestoneRepository = milestoneRepository,
         )
     }
+    val analyticsViewModel: AnalyticsViewModel = viewModel(
+        factory = AnalyticsViewModel.factory(
+            projectRepository = ptoRepository,
+            riskRepository = riskRepository,
+            milestoneRepository = milestoneRepository,
+        ),
+    )
 
     val onProjectFlow = destination?.route?.startsWith("project_details") == true
     val onGroFlow = destination?.route?.startsWith("gro_") == true
@@ -207,7 +217,12 @@ private fun MainShell() {
                     },
                 )
             }
-            composable(Tab.Analytics.route) { AnalyticsScreen(goProfile) }
+            composable(Tab.Analytics.route) {
+                AnalyticsScreen(
+                    viewModel = analyticsViewModel,
+                    onProfile = goProfile,
+                )
+            }
             composable(Tab.Governance.route) {
                 GovernanceScreen(onProfile = goProfile)
             }

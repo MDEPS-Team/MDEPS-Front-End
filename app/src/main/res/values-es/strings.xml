@@ -166,4 +166,19 @@
     <string name="gro_seed_demo_data">Cargar datos de ejemplo</string>
     <string name="gro_a11y_seed_demo_data">Cargar datos de gobernanza de ejemplo para este proyecto</string>
     <string name="gro_a11y_navigate_back">Volver</string>
+
+    <!-- ASS — analítica -->
+    <string name="ass_analytics_title">Analítica</string>
+    <string name="ass_analytics_subtitle">SUITE DE INTELIGENCIA</string>
+    <string name="ass_analytics_headline">Indicadores corporativos de entrega</string>
+    <string name="ass_global_progress_label">Progreso global del portafolio</string>
+    <string name="ass_global_progress_value">%1$d%% combinado de tareas y hitos</string>
+    <string name="ass_operative_efficiency_label">Eficiencia operativa</string>
+    <string name="ass_operative_efficiency_value">%1$.1f%%</string>
+    <string name="ass_critical_risks_label">Riesgos altos activos</string>
+    <string name="ass_critical_risks_value">%1$d</string>
+    <string name="ass_data_disclaimer">Las métricas se calculan en tiempo real desde tareas PTO y datos GRO.</string>
+    <string name="ass_a11y_global_progress">Progreso del portafolio al %1$d por ciento</string>
+    <string name="ass_a11y_operative_efficiency">Eficiencia operativa al %1$.1f por ciento</string>
+    <string name="ass_a11y_critical_risks">%1$d riesgos activos altos o críticos</string>
 </resources>

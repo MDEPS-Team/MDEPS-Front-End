@@ -22,6 +22,11 @@ class OfflineFirstProjectRepository(
     override fun observePendingTaskCount(): Flow<Int> =
         projectDao.observePendingTaskCount()
 
+    override fun observeAllTasks(): Flow<List<Task>> =
+        projectDao.observeAllTasks().map { entities ->
+            entities.map { it.toDomain() }
+        }
+
     override fun observeTasksByProjectId(projectId: Long): Flow<List<Task>> =
         projectDao.observeTasksByProjectId(projectId).map { entities ->
             entities.map { it.toDomain() }

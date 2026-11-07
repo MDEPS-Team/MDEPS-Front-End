@@ -10,6 +10,8 @@ interface ProjectRepository {
 
     fun observePendingTaskCount(): Flow<Int>
 
+    fun observeAllTasks(): Flow<List<Task>>
+
     fun observeTasksByProjectId(projectId: Long): Flow<List<Task>>
 
     suspend fun insertProject(project: Project): Long
