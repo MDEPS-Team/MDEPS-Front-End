@@ -64,8 +64,8 @@
     <string name="home_empty_active_projects">No active projects. Open the Projects tab to add one.</string>
     <string name="home_kpi_active_projects_label">Active projects</string>
     <string name="home_kpi_active_projects_value">%1$d</string>
-    <string name="home_kpi_portfolio_label">Delivery focus</string>
-    <string name="home_kpi_portfolio_value">PMO</string>
+    <string name="home_kpi_pending_tasks_label">Pending tasks</string>
+    <string name="home_kpi_pending_tasks_value">%1$d</string>
     <string name="home_a11y_open_profile">Open profile</string>
 
     <string name="pto_projects_title">Projects</string>

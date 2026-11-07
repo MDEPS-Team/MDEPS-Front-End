@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,25 +55,25 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.mdeps_application.R
-import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
+import com.example.mdeps_application.iam.application.IamViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun ProfileScreen() {
-    var avatarUriString by rememberSaveable { mutableStateOf<String?>(null) }
-    var corporateEmail by rememberSaveable {
-        mutableStateOf("alex.vance@corporationenterprise.com")
-    }
+fun ProfileScreen(
+    viewModel: IamViewModel,
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val user = uiState.user
     var showSecuritySheet by rememberSaveable { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    val avatarUri = avatarUriString?.let(Uri::parse)
+    val avatarUri = user?.avatarUrl?.let(Uri::parse)
 
     val avatarDescription = stringResource(R.string.iam_a11y_profile_avatar)
     val changeAvatarDescription = stringResource(R.string.iam_a11y_change_avatar_button)
@@ -82,7 +84,7 @@ fun ProfileScreen() {
         contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
         if (uri != null) {
-            avatarUriString = uri.toString()
+            viewModel.saveProfileAvatar(context.contentResolver, uri)
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(avatarUpdatedMessage)
             }
@@ -179,13 +181,13 @@ fun ProfileScreen() {
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = stringResource(R.string.iam_profile_user_name),
+                        text = user?.name.orEmpty(),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        text = stringResource(R.string.iam_profile_user_role),
+                        text = user?.role.orEmpty(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -250,9 +252,9 @@ fun ProfileScreen() {
 
     if (showSecuritySheet) {
         SecuritySheet(
-            corporateEmail = corporateEmail,
+            corporateEmail = user?.email.orEmpty(),
             onDismiss = { showSecuritySheet = false },
-            onEmailChange = { corporateEmail = it },
+            onEmailChange = {},
         )
     }
 }
@@ -281,10 +283,3 @@ private fun ProfileMetricCard(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun ProfileScreenPreview() {
-    MDEPS_APPLICATIONTheme {
-        ProfileScreen()
-    }
-}

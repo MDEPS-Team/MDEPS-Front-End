@@ -1,5 +1,8 @@
 package com.example.mdeps_application.iam.application
 
+import android.content.ContentResolver
+import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -27,6 +30,21 @@ class IamViewModel(
 
     private val _uiState = MutableStateFlow(IamUiState())
     val uiState: StateFlow<IamUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            authRepository.observeUserProfile().collect { profileUser ->
+                if (profileUser != null) {
+                    _uiState.update { current ->
+                        current.copy(
+                            user = profileUser,
+                            isAuthenticated = current.isAuthenticated || profileUser.id.isNotBlank(),
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun signIn(email: String, password: String) {
         viewModelScope.launch {
@@ -101,7 +119,20 @@ class IamViewModel(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
+    fun saveProfileAvatar(contentResolver: ContentResolver, uri: Uri) {
+        viewModelScope.launch {
+            runCatching {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
+            authRepository.saveProfileAvatarUri(uri.toString())
+        }
+    }
+
     private suspend fun persistSession(user: User) {
+        authRepository.saveUserProfile(user)
         authRepository.saveToken(
             Token(
                 accessToken = "mock-access-${user.id}",

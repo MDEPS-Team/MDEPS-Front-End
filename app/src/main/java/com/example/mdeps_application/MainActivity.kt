@@ -116,6 +116,9 @@ private fun MainShell() {
     val destination = entry?.destination
     val context = LocalContext.current
 
+    val authRepository = remember { DataStoreAuthRepository(context.iamAuthDataStore) }
+    val iamViewModel: IamViewModel = viewModel(factory = IamViewModel.factory(authRepository))
+
     val ptoRepository = remember {
         OfflineFirstProjectRepository(PtoDatabase.create(context.applicationContext).projectDao())
     }
@@ -208,7 +211,9 @@ private fun MainShell() {
             composable(Tab.Governance.route) {
                 GovernanceScreen(onProfile = goProfile)
             }
-            composable(Tab.Profile.route) { ProfileScreen() }
+            composable(Tab.Profile.route) {
+                ProfileScreen(viewModel = iamViewModel)
+            }
             composable(ROUTE_CREATE) { CreateProjectScreen(onClose = { nav.popBackStack() }) }
             composable(
                 route = ROUTE_GRO_RISKS,

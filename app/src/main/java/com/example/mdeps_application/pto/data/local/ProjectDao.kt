@@ -14,6 +14,12 @@ interface ProjectDao {
     @Query("SELECT * FROM projects ORDER BY name ASC")
     fun observeProjects(): Flow<List<ProjectEntity>>
 
+    @Query("SELECT COUNT(*) FROM projects WHERE status != 'COMPLETED'")
+    fun observeActiveProjectCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 0")
+    fun observePendingTaskCount(): Flow<Int>
+
     @Query("SELECT * FROM projects WHERE id = :projectId LIMIT 1")
     fun observeProjectById(projectId: Long): Flow<ProjectEntity?>
 

@@ -20,12 +20,20 @@ data class ProjectDetailUiState(
     val tasks: List<Task> = emptyList(),
 )
 
+data class HomePortfolioMetrics(
+    val activeProjectCount: Int = 0,
+    val pendingTaskCount: Int = 0,
+)
+
 class PtoViewModel(
     private val projectRepository: ProjectRepository,
 ) : ViewModel() {
 
     private val _projects = MutableStateFlow<List<Project>>(emptyList())
     val projects: StateFlow<List<Project>> = _projects.asStateFlow()
+
+    private val _homeMetrics = MutableStateFlow(HomePortfolioMetrics())
+    val homeMetrics: StateFlow<HomePortfolioMetrics> = _homeMetrics.asStateFlow()
 
     private val _projectDetailState = MutableStateFlow(ProjectDetailUiState())
     val projectDetailState: StateFlow<ProjectDetailUiState> = _projectDetailState.asStateFlow()
@@ -36,6 +44,19 @@ class PtoViewModel(
         viewModelScope.launch {
             projectRepository.observeProjects().collect { projectList ->
                 _projects.value = projectList
+            }
+        }
+        viewModelScope.launch {
+            combine(
+                projectRepository.observeActiveProjectCount(),
+                projectRepository.observePendingTaskCount(),
+            ) { activeProjects, pendingTasks ->
+                HomePortfolioMetrics(
+                    activeProjectCount = activeProjects,
+                    pendingTaskCount = pendingTasks,
+                )
+            }.collect { metrics ->
+                _homeMetrics.value = metrics
             }
         }
     }

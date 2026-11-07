@@ -44,6 +44,7 @@ fun HomeScreen(
     onProfile: () -> Unit,
 ) {
     val projects by viewModel.projects.collectAsStateWithLifecycle()
+    val homeMetrics by viewModel.homeMetrics.collectAsStateWithLifecycle()
     val activeProjects = remember(projects) {
         projects.filter { it.status != ProjectStatus.COMPLETED }
     }
@@ -51,7 +52,11 @@ fun HomeScreen(
     val openProjectDescription = stringResource(R.string.pto_a11y_project_card)
     val activeCountLabel = stringResource(
         R.string.home_kpi_active_projects_value,
-        activeProjects.size,
+        homeMetrics.activeProjectCount,
+    )
+    val pendingTasksLabel = stringResource(
+        R.string.home_kpi_pending_tasks_value,
+        homeMetrics.pendingTaskCount,
     )
 
     Scaffold(
@@ -77,41 +82,40 @@ fun HomeScreen(
             )
         },
     ) { innerPadding ->
-        if (activeProjects.isEmpty()) {
-            Text(
-                text = stringResource(R.string.home_empty_active_projects),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(24.dp),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        PortfolioKpiCard(
-                            label = stringResource(R.string.home_kpi_active_projects_label),
-                            value = activeCountLabel,
-                            modifier = Modifier.weight(1f),
-                        )
-                        PortfolioKpiCard(
-                            label = stringResource(R.string.home_kpi_portfolio_label),
-                            value = stringResource(R.string.home_kpi_portfolio_value),
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    PortfolioKpiCard(
+                        label = stringResource(R.string.home_kpi_active_projects_label),
+                        value = activeCountLabel,
+                        modifier = Modifier.weight(1f),
+                    )
+                    PortfolioKpiCard(
+                        label = stringResource(R.string.home_kpi_pending_tasks_label),
+                        value = pendingTasksLabel,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
+            }
+            if (activeProjects.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.home_empty_active_projects),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            } else {
                 items(activeProjects, key = { it.id }) { project ->
                     ProjectCard(
                         project = project,
