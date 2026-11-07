@@ -53,12 +53,12 @@ import com.example.mdeps_application.iam.ui.ProfileScreen
 import com.example.mdeps_application.pto.application.PtoViewModel
 import com.example.mdeps_application.pto.data.OfflineFirstProjectRepository
 import com.example.mdeps_application.pto.data.local.PtoDatabase
+import com.example.mdeps_application.pto.ui.HomeScreen
 import com.example.mdeps_application.pto.ui.ProjectDetailScreen
 import com.example.mdeps_application.pto.ui.ProjectListScreen
 import com.example.mdeps_application.ui.AnalyticsScreen
 import com.example.mdeps_application.ui.CreateProjectScreen
 import com.example.mdeps_application.ui.GovernanceScreen
-import com.example.mdeps_application.ui.HomeScreen
 import com.example.mdeps_application.ui.Vx
 import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
 
@@ -80,8 +80,6 @@ private const val ROUTE_PROJECT_DETAILS = "project_details/{projectId}"
 private const val ROUTE_GRO_RISKS = "gro_risks/{projectId}"
 private const val ROUTE_GRO_MILESTONES = "gro_milestones/{projectId}"
 private const val ARG_PROJECT_ID = "projectId"
-private const val DEMO_GOVERNANCE_PROJECT_ID = 1L
-
 private fun projectDetailsRoute(projectId: Long): String = "project_details/$projectId"
 private fun groRisksRoute(projectId: Long): String = "gro_risks/$projectId"
 private fun groMilestonesRoute(projectId: Long): String = "gro_milestones/$projectId"
@@ -166,7 +164,17 @@ private fun MainShell() {
     ) { inner ->
         val goProfile = { nav.navigateTab(Tab.Profile.route) }
         NavHost(nav, startDestination = Tab.Home.route, modifier = Modifier.padding(inner)) {
-            composable(Tab.Home.route) { HomeScreen(goProfile) }
+            composable(Tab.Home.route) {
+                HomeScreen(
+                    viewModel = ptoViewModel,
+                    onProjectClick = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfile = goProfile,
+                )
+            }
             composable(Tab.Projects.route) {
                 ProjectListScreen(
                     viewModel = ptoViewModel,
@@ -188,16 +196,17 @@ private fun MainShell() {
                 ProjectDetailScreen(
                     viewModel = ptoViewModel,
                     onNavigateBack = { nav.popBackStack() },
+                    onNavigateToRisks = { projectId ->
+                        nav.navigateToGroRisks(projectId)
+                    },
+                    onNavigateToMilestones = { projectId ->
+                        nav.navigateToGroMilestones(projectId)
+                    },
                 )
             }
             composable(Tab.Analytics.route) { AnalyticsScreen(goProfile) }
             composable(Tab.Governance.route) {
-                GovernanceScreen(
-                    onProfile = goProfile,
-                    onOpenRiskMatrix = { projectId -> nav.navigate(groRisksRoute(projectId)) },
-                    onOpenMilestoneTimeline = { projectId -> nav.navigate(groMilestonesRoute(projectId)) },
-                    demoProjectId = DEMO_GOVERNANCE_PROJECT_ID,
-                )
+                GovernanceScreen(onProfile = goProfile)
             }
             composable(Tab.Profile.route) { ProfileScreen() }
             composable(ROUTE_CREATE) { CreateProjectScreen(onClose = { nav.popBackStack() }) }
@@ -250,5 +259,17 @@ private fun NavHostController.navigateTab(route: String) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = true
+    }
+}
+
+private fun NavHostController.navigateToGroRisks(projectId: Long) {
+    navigate(groRisksRoute(projectId)) {
+        launchSingleTop = true
+    }
+}
+
+private fun NavHostController.navigateToGroMilestones(projectId: Long) {
+    navigate(groMilestonesRoute(projectId)) {
+        launchSingleTop = true
     }
 }

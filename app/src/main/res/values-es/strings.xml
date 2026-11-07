@@ -59,8 +59,23 @@
     <string name="iam_a11y_security_change_2fa">Opción para cambiar autenticación de dos factores</string>
 
     <!-- PTO — pantallas -->
+    <!-- Portafolio inicio -->
+    <string name="home_portfolio_title">Mi portafolio</string>
+    <string name="home_empty_active_projects">No hay proyectos activos. Abre la pestaña Proyectos para agregar uno.</string>
+    <string name="home_kpi_active_projects_label">Proyectos activos</string>
+    <string name="home_kpi_active_projects_value">%1$d</string>
+    <string name="home_kpi_portfolio_label">Foco de entrega</string>
+    <string name="home_kpi_portfolio_value">PMO</string>
+    <string name="home_a11y_open_profile">Abrir perfil</string>
+
     <string name="pto_projects_title">Proyectos</string>
     <string name="pto_project_tasks_title">Tareas del proyecto</string>
+    <string name="pto_hub_tab_tasks">Tareas</string>
+    <string name="pto_hub_tab_risks">Riesgos</string>
+    <string name="pto_hub_tab_timeline">Línea de tiempo</string>
+    <string name="pto_a11y_hub_tab_tasks">Mostrar tareas del proyecto</string>
+    <string name="pto_a11y_hub_tab_risks">Abrir matriz de riesgos del proyecto</string>
+    <string name="pto_a11y_hub_tab_timeline">Abrir línea de tiempo de hitos del proyecto</string>
     <string name="pto_add_project">Agregar proyecto</string>
     <string name="pto_add_task">Agregar tarea</string>
     <string name="pto_project_description_label">Descripción</string>
@@ -141,6 +156,9 @@
     <string name="gro_a11y_milestone_pending">Hito pendiente: %1$s, fecha objetivo %2$s</string>
     <string name="gro_a11y_toggle_milestone">Alternar estado de hito alcanzado</string>
     <string name="gro_a11y_milestone_check_icon">Indicador de hito completado</string>
+
+    <string name="gro_governance_select_project">Selecciona un proyecto en Inicio para administrar su gobierno.</string>
+    <string name="gro_governance_tab_title">Gobernanza</string>
 
     <!-- GRO — navegación demo de gobernanza -->
     <string name="gro_governance_open_risks">Abrir matriz de riesgos (demo)</string>

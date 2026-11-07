@@ -33,17 +33,21 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,10 +69,18 @@ import com.example.mdeps_application.pto.domain.Project
 import com.example.mdeps_application.pto.domain.Task
 import kotlinx.coroutines.launch
 
+private enum class ProjectHubTab {
+    TASKS,
+    RISKS,
+    TIMELINE,
+}
+
 @Composable
 fun ProjectDetailScreen(
     viewModel: PtoViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToRisks: (Long) -> Unit,
+    onNavigateToMilestones: (Long) -> Unit,
 ) {
     val detailState by viewModel.projectDetailState.collectAsStateWithLifecycle()
     val project = detailState.project
@@ -92,6 +104,8 @@ fun ProjectDetailScreen(
         project = project,
         tasks = tasks,
         onNavigateBack = onNavigateBack,
+        onNavigateToRisks = { onNavigateToRisks(project.id) },
+        onNavigateToMilestones = { onNavigateToMilestones(project.id) },
         onAddTaskClick = {
             viewModel.addTask(
                 projectId = project.id,
@@ -112,10 +126,13 @@ private fun ProjectDetailContent(
     project: Project,
     tasks: List<Task>,
     onNavigateBack: () -> Unit,
+    onNavigateToRisks: () -> Unit,
+    onNavigateToMilestones: () -> Unit,
     onAddTaskClick: () -> Unit,
     onTaskCompletedChange: (Task, Boolean) -> Unit,
     onEvidencePhotoCaptured: (Task, String) -> Unit,
 ) {
+    var selectedHubTab by rememberSaveable { mutableIntStateOf(ProjectHubTab.TASKS.ordinal) }
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -128,6 +145,12 @@ private fun ProjectDetailContent(
     val exportPdfDescription = stringResource(R.string.pto_a11y_export_pdf)
     val exportPdfFailedMessage = stringResource(R.string.pto_export_pdf_failed)
     val exportPdfNoAppMessage = stringResource(R.string.pto_export_pdf_no_app)
+    val tabTasksLabel = stringResource(R.string.pto_hub_tab_tasks)
+    val tabRisksLabel = stringResource(R.string.pto_hub_tab_risks)
+    val tabTimelineLabel = stringResource(R.string.pto_hub_tab_timeline)
+    val tabTasksDescription = stringResource(R.string.pto_a11y_hub_tab_tasks)
+    val tabRisksDescription = stringResource(R.string.pto_a11y_hub_tab_risks)
+    val tabTimelineDescription = stringResource(R.string.pto_a11y_hub_tab_timeline)
     val pdfExporter = remember(context) { ProjectPdfExporter(context.applicationContext) }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -164,7 +187,7 @@ private fun ProjectDetailContent(
                 TopAppBar(
                     title = {
                         Text(
-                            text = stringResource(R.string.pto_project_tasks_title),
+                            text = project.name,
                             fontWeight = FontWeight.Bold,
                         )
                     },
@@ -228,30 +251,54 @@ private fun ProjectDetailContent(
                     ProjectSummaryCard(project = project)
                 }
                 item {
-                    Text(
-                        text = stringResource(R.string.pto_tasks_section_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
-                    )
-                }
-                if (tasks.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.pto_empty_tasks),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    PrimaryTabRow(selectedTabIndex = selectedHubTab) {
+                        Tab(
+                            selected = selectedHubTab == ProjectHubTab.TASKS.ordinal,
+                            onClick = { selectedHubTab = ProjectHubTab.TASKS.ordinal },
+                            modifier = Modifier.semantics { contentDescription = tabTasksDescription },
+                            text = { Text(tabTasksLabel) },
+                        )
+                        Tab(
+                            selected = selectedHubTab == ProjectHubTab.RISKS.ordinal,
+                            onClick = onNavigateToRisks,
+                            modifier = Modifier.semantics { contentDescription = tabRisksDescription },
+                            text = { Text(tabRisksLabel) },
+                        )
+                        Tab(
+                            selected = selectedHubTab == ProjectHubTab.TIMELINE.ordinal,
+                            onClick = onNavigateToMilestones,
+                            modifier = Modifier.semantics { contentDescription = tabTimelineDescription },
+                            text = { Text(tabTimelineLabel) },
                         )
                     }
-                } else {
-                    items(tasks, key = { it.id }) { task ->
-                        TaskItem(
-                            task = task,
-                            onCompletedChange = { isCompleted ->
-                                onTaskCompletedChange(task, isCompleted)
-                            },
-                            onTakeEvidencePhotoClick = { openCameraForTask(task) },
+                }
+                if (selectedHubTab == ProjectHubTab.TASKS.ordinal) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.pto_tasks_section_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
                         )
+                    }
+                    if (tasks.isEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.pto_empty_tasks),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        items(tasks, key = { it.id }) { task ->
+                            TaskItem(
+                                task = task,
+                                onCompletedChange = { isCompleted ->
+                                    onTaskCompletedChange(task, isCompleted)
+                                },
+                                onTakeEvidencePhotoClick = { openCameraForTask(task) },
+                            )
+                        }
                     }
                 }
             }

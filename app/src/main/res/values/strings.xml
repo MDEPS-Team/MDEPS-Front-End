@@ -59,8 +59,23 @@
     <string name="iam_a11y_security_change_2fa">Change two-factor authentication option</string>
 
     <!-- PTO — screens -->
+    <!-- Home portfolio -->
+    <string name="home_portfolio_title">My Portfolio</string>
+    <string name="home_empty_active_projects">No active projects. Open the Projects tab to add one.</string>
+    <string name="home_kpi_active_projects_label">Active projects</string>
+    <string name="home_kpi_active_projects_value">%1$d</string>
+    <string name="home_kpi_portfolio_label">Delivery focus</string>
+    <string name="home_kpi_portfolio_value">PMO</string>
+    <string name="home_a11y_open_profile">Open profile</string>
+
     <string name="pto_projects_title">Projects</string>
     <string name="pto_project_tasks_title">Project Tasks</string>
+    <string name="pto_hub_tab_tasks">Tasks</string>
+    <string name="pto_hub_tab_risks">Risks</string>
+    <string name="pto_hub_tab_timeline">Timeline</string>
+    <string name="pto_a11y_hub_tab_tasks">Show project tasks</string>
+    <string name="pto_a11y_hub_tab_risks">Open project risk matrix</string>
+    <string name="pto_a11y_hub_tab_timeline">Open project milestone timeline</string>
     <string name="pto_add_project">Add Project</string>
     <string name="pto_add_task">Add Task</string>
     <string name="pto_project_description_label">Description</string>
@@ -141,6 +156,9 @@
     <string name="gro_a11y_milestone_pending">Milestone pending: %1$s, target date %2$s</string>
     <string name="gro_a11y_toggle_milestone">Toggle milestone reached status</string>
     <string name="gro_a11y_milestone_check_icon">Milestone completed indicator</string>
+
+    <string name="gro_governance_select_project">Please select a project on Home to manage its governance.</string>
+    <string name="gro_governance_tab_title">Governance</string>
 
     <!-- GRO — governance demo navigation -->
     <string name="gro_governance_open_risks">Open Risk Matrix (demo)</string>

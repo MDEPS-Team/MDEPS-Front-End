@@ -94,43 +94,6 @@ fun LoginScreen(onSignIn: () -> Unit) {
     }
 }
 
-// ───────────────────────── HOME ─────────────────────────
-@Composable
-fun HomeScreen(onProfile: () -> Unit) {
-    Column(Modifier.fillMaxSize().background(Vx.Bg)) {
-        VxTopBar(
-            title = { Text("My Portfolio", fontWeight = FontWeight.Bold, fontSize = 20.sp) },
-            actions = { ProfileButton(onProfile) }
-        )
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    HomeKpi("Active Projects", "4", Modifier.weight(1f))
-                    HomeKpi("Tasks", "12", Modifier.weight(1f))
-                    HomeKpi("ROI", "15%", Modifier.weight(1f))
-                }
-            }
-            items(mockProjects) { ProjectCard(it) }
-        }
-    }
-}
-
-@Composable
-private fun HomeKpi(label: String, value: String, modifier: Modifier) {
-    Card(
-        modifier, shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Vx.BlueSoft)
-    ) {
-        Column(Modifier.padding(12.dp)) {
-            Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Vx.Blue)
-            Text(label, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Vx.Blue)
-        }
-    }
-}
-
 @Composable
 fun ProjectCard(p: Project) {
     val risk = p.status == "En riesgo"
@@ -178,44 +141,31 @@ fun ProjectsScreen(onCreate: () -> Unit, onProfile: () -> Unit) {
 
 // ───────────────────────── GOVERNANCE ─────────────────────────
 @Composable
-fun GovernanceScreen(
-    onProfile: () -> Unit,
-    onOpenRiskMatrix: (Long) -> Unit,
-    onOpenMilestoneTimeline: (Long) -> Unit,
-    demoProjectId: Long,
-) {
+fun GovernanceScreen(onProfile: () -> Unit) {
     val controls = remember3()
     Column(Modifier.fillMaxSize().background(Vx.Bg)) {
         VxTopBar(
-            title = { Text("Governance", fontWeight = FontWeight.Bold, fontSize = 20.sp) },
-            actions = { ProfileButton(onProfile) }
+            title = {
+                Text(
+                    text = stringResource(R.string.gro_governance_tab_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                )
+            },
+            actions = { ProfileButton(onProfile) },
+        )
+        Text(
+            text = stringResource(R.string.gro_governance_select_project),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            fontSize = 14.sp,
+            color = Vx.Muted,
         )
         Column(
-            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Button(
-                onClick = { onOpenRiskMatrix(demoProjectId) },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Vx.Blue),
-            ) {
-                Text(
-                    text = stringResource(R.string.gro_governance_open_risks),
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            Button(
-                onClick = { onOpenMilestoneTimeline(demoProjectId) },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Vx.Blue),
-            ) {
-                Text(
-                    text = stringResource(R.string.gro_governance_open_milestones),
-                    fontWeight = FontWeight.Bold,
-                )
-            }
             controls.forEach { (title, desc, initial) ->
                 var on by rememberSaveable(title) { mutableStateOf(initial) }
                 VxCard(Modifier.fillMaxWidth(), onClick = { on = !on }) {
