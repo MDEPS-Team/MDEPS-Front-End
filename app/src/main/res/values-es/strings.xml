@@ -166,6 +166,7 @@
     <string name="gro_seed_demo_data">Cargar datos de ejemplo</string>
     <string name="gro_a11y_seed_demo_data">Cargar datos de gobernanza de ejemplo para este proyecto</string>
     <string name="gro_a11y_navigate_back">Volver</string>
+    <string name="gro_action_completed_success">Acción completada correctamente</string>
 
     <!-- ASS — analítica -->
     <string name="ass_analytics_title">Analítica</string>

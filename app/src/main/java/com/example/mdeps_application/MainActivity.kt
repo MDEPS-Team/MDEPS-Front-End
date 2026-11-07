@@ -11,14 +11,19 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -60,6 +65,7 @@ import com.example.mdeps_application.pto.ui.ProjectDetailScreen
 import com.example.mdeps_application.pto.ui.ProjectListScreen
 import com.example.mdeps_application.ui.CreateProjectScreen
 import com.example.mdeps_application.ui.GovernanceScreen
+import com.example.mdeps_application.ui.LocalAppSnackbarHostState
 import com.example.mdeps_application.ui.Vx
 import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
 
@@ -147,10 +153,21 @@ private fun MainShell() {
     val onProjectFlow = destination?.route?.startsWith("project_details") == true
     val onGroFlow = destination?.route?.startsWith("gro_") == true
     val hideBottomBar = onProjectFlow || onGroFlow
+    var analyticsVisitNonce by remember { mutableIntStateOf(0) }
+    val isAnalyticsTab = destination?.route == Tab.Analytics.route
+    LaunchedEffect(isAnalyticsTab) {
+        if (isAnalyticsTab) {
+            analyticsVisitNonce++
+        }
+    }
 
-    Scaffold(
-        containerColor = Vx.Bg,
-        bottomBar = {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    CompositionLocalProvider(LocalAppSnackbarHostState provides snackbarHostState) {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            bottomBar = {
             if (!hideBottomBar) {
                 NavigationBar(containerColor = Color.White) {
                     Tab.entries.forEach { tab ->
@@ -221,6 +238,7 @@ private fun MainShell() {
                 AnalyticsScreen(
                     viewModel = analyticsViewModel,
                     onProfile = goProfile,
+                    animationNonce = analyticsVisitNonce,
                 )
             }
             composable(Tab.Governance.route) {
@@ -270,6 +288,7 @@ private fun MainShell() {
                     onNavigateBack = { nav.popBackStack() },
                 )
             }
+        }
         }
     }
 }

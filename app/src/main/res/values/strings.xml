@@ -166,6 +166,7 @@
     <string name="gro_seed_demo_data">Load sample data</string>
     <string name="gro_a11y_seed_demo_data">Load sample governance data for this project</string>
     <string name="gro_a11y_navigate_back">Navigate back</string>
+    <string name="gro_action_completed_success">Action completed successfully</string>
 
     <!-- ASS — analytics -->
     <string name="ass_analytics_title">Analytics</string>

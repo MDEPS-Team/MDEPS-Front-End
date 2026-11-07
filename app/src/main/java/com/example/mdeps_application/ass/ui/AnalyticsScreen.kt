@@ -2,6 +2,11 @@
 
 package com.example.mdeps_application.ass.ui
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,7 +33,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -47,22 +54,45 @@ import com.example.mdeps_application.R
 import com.example.mdeps_application.ass.application.AnalyticsViewModel
 import com.example.mdeps_application.ui.ProfileButton
 
-private val CorporateBlue = Color(0xFF1E5BB8)
-private val CorporateBlueSoft = Color(0xFFEAF1FD)
-private val CorporateWarning = Color(0xFFC62828)
-
 @Composable
 fun AnalyticsScreen(
     viewModel: AnalyticsViewModel,
     onProfile: () -> Unit,
+    animationNonce: Int,
+    modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val globalProgressAnim = remember { Animatable(0f) }
+    val efficiencyAnim = remember { Animatable(0f) }
+
+    LaunchedEffect(animationNonce, uiState.globalProgress, uiState.operativeEfficiency) {
+        globalProgressAnim.snapTo(0f)
+        efficiencyAnim.snapTo(0f)
+        globalProgressAnim.animateTo(
+            targetValue = uiState.globalProgress.coerceIn(0f, 1f),
+            animationSpec = tween(durationMillis = 1000),
+        )
+        efficiencyAnim.animateTo(
+            targetValue = uiState.operativeEfficiency,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow,
+            ),
+        )
+    }
+
+    val animatedGlobalProgress = globalProgressAnim.value
+    val animatedEfficiency = efficiencyAnim.value
+
     val progressDescription = stringResource(
         R.string.ass_a11y_global_progress,
-        (uiState.globalProgress * 100).toInt(),
+        (animatedGlobalProgress * 100).toInt(),
     )
 
     Scaffold(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         topBar = {
             TopAppBar(
                 title = {
@@ -70,7 +100,7 @@ fun AnalyticsScreen(
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
-                            tint = CorporateBlue,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(22.dp),
                         )
                         Text(
@@ -95,7 +125,7 @@ fun AnalyticsScreen(
             Text(
                 text = stringResource(R.string.ass_analytics_subtitle),
                 style = MaterialTheme.typography.labelLarge,
-                color = CorporateBlue,
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
             )
             Text(
@@ -105,7 +135,7 @@ fun AnalyticsScreen(
             )
 
             GlobalProgressCard(
-                globalProgress = uiState.globalProgress,
+                globalProgress = animatedGlobalProgress,
                 progressDescription = progressDescription,
             )
 
@@ -114,7 +144,7 @@ fun AnalyticsScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 OperativeEfficiencyCard(
-                    efficiencyPercent = uiState.operativeEfficiency,
+                    efficiencyPercent = animatedEfficiency,
                     modifier = Modifier.weight(1f),
                 )
                 CriticalRisksCard(
@@ -141,9 +171,16 @@ private fun GlobalProgressCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .animateContentSize()
             .semantics { contentDescription = progressDescription },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CorporateBlueSoft),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 6.dp,
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -154,6 +191,7 @@ private fun GlobalProgressCard(
             Spacer(modifier = Modifier.height(12.dp))
             GlobalProgressCurve(
                 progress = globalProgress,
+                curveColor = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
@@ -164,8 +202,8 @@ private fun GlobalProgressCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp),
-                color = CorporateBlue,
-                trackColor = Color.White,
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
             )
             Text(
                 text = stringResource(
@@ -183,6 +221,7 @@ private fun GlobalProgressCard(
 @Composable
 private fun GlobalProgressCurve(
     progress: Float,
+    curveColor: Color,
     modifier: Modifier = Modifier,
 ) {
     val clampedProgress = progress.coerceIn(0f, 1f)
@@ -207,18 +246,18 @@ private fun GlobalProgressCurve(
             fillPath,
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    CorporateBlue.copy(alpha = 0.28f),
+                    curveColor.copy(alpha = 0.28f),
                     Color.Transparent,
                 ),
             ),
         )
         drawPath(
             path = path,
-            color = CorporateBlue,
+            color = curveColor,
             style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round),
         )
         drawCircle(color = Color.White, radius = 8.dp.toPx(), center = end)
-        drawCircle(color = CorporateBlue, radius = 5.dp.toPx(), center = end)
+        drawCircle(color = curveColor, radius = 5.dp.toPx(), center = end)
     }
 }
 
@@ -232,8 +271,14 @@ private fun OperativeEfficiencyCard(
         efficiencyPercent,
     )
     Card(
-        modifier = modifier.semantics { contentDescription = efficiencyDescription },
+        modifier = modifier
+            .animateContentSize()
+            .semantics { contentDescription = efficiencyDescription },
         shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
@@ -263,16 +308,23 @@ private fun CriticalRisksCard(
         R.string.ass_a11y_critical_risks,
         activeCriticalRisks,
     )
+    val warningColor = MaterialTheme.colorScheme.error
     Card(
-        modifier = modifier.semantics { contentDescription = risksDescription },
+        modifier = modifier
+            .animateContentSize()
+            .semantics { contentDescription = risksDescription },
         shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Warning,
                     contentDescription = null,
-                    tint = CorporateWarning,
+                    tint = warningColor,
                     modifier = Modifier.size(16.dp),
                 )
                 Text(
@@ -290,7 +342,7 @@ private fun CriticalRisksCard(
                 modifier = Modifier.padding(top = 6.dp),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = if (activeCriticalRisks > 0) CorporateWarning else MaterialTheme.colorScheme.onSurface,
+                color = if (activeCriticalRisks > 0) warningColor else MaterialTheme.colorScheme.onSurface,
             )
         }
     }

@@ -41,6 +41,7 @@ fun MilestoneTimelineScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    CollectGroUiEvents(viewModel = viewModel)
     val milestones by viewModel.milestonesState.collectAsStateWithLifecycle()
     val navigateBackDescription = stringResource(R.string.gro_a11y_navigate_back)
     val seedDemoDescription = stringResource(R.string.gro_a11y_seed_demo_data)

@@ -10,8 +10,11 @@ import com.example.mdeps_application.gro.domain.RiskRepository
 import com.example.mdeps_application.gro.domain.RiskSeverity
 import com.example.mdeps_application.gro.domain.RiskStatus
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -27,6 +30,9 @@ class GroViewModel(
 
     private val _milestonesState = MutableStateFlow<List<Milestone>>(emptyList())
     val milestonesState: StateFlow<List<Milestone>> = _milestonesState.asStateFlow()
+
+    private val _uiEvents = MutableSharedFlow<GroUiEvent>(extraBufferCapacity = 1)
+    val uiEvents: SharedFlow<GroUiEvent> = _uiEvents.asSharedFlow()
 
     private var governanceJob: Job? = null
 
@@ -54,6 +60,7 @@ class GroViewModel(
         _risksState.update { current -> current.filter { it.id != risk.id } }
         viewModelScope.launch {
             riskRepository.updateRisk(risk.copy(status = RiskStatus.RESOLVED))
+            _uiEvents.emit(GroUiEvent.ActionCompleted)
         }
     }
 
@@ -64,6 +71,7 @@ class GroViewModel(
         }
         viewModelScope.launch {
             milestoneRepository.updateMilestone(toggled)
+            _uiEvents.emit(GroUiEvent.ActionCompleted)
         }
     }
 
