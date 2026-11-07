@@ -11,19 +11,25 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -39,6 +45,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.mdeps_application.ass.application.AnalyticsViewModel
+import com.example.mdeps_application.ass.ui.AnalyticsScreen
 import com.example.mdeps_application.gro.application.GroViewModel
 import com.example.mdeps_application.gro.data.OfflineFirstMilestoneRepository
 import com.example.mdeps_application.gro.data.OfflineFirstRiskRepository
@@ -53,14 +61,19 @@ import com.example.mdeps_application.iam.ui.ProfileScreen
 import com.example.mdeps_application.pto.application.PtoViewModel
 import com.example.mdeps_application.pto.data.OfflineFirstProjectRepository
 import com.example.mdeps_application.pto.data.local.PtoDatabase
+import com.example.mdeps_application.pto.ui.HomeScreen
 import com.example.mdeps_application.pto.ui.ProjectDetailScreen
 import com.example.mdeps_application.pto.ui.ProjectListScreen
-import com.example.mdeps_application.ui.AnalyticsScreen
+import com.example.mdeps_application.app.data.OnboardingStore
+import com.example.mdeps_application.app.data.onboardingDataStore
+import com.example.mdeps_application.gro.ui.GovernanceHubScreen
 import com.example.mdeps_application.ui.CreateProjectScreen
-import com.example.mdeps_application.ui.GovernanceScreen
-import com.example.mdeps_application.ui.HomeScreen
+import com.example.mdeps_application.ui.LocalAppSnackbarHostState
+import com.example.mdeps_application.ui.OnboardingDialog
 import com.example.mdeps_application.ui.Vx
 import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,8 +93,6 @@ private const val ROUTE_PROJECT_DETAILS = "project_details/{projectId}"
 private const val ROUTE_GRO_RISKS = "gro_risks/{projectId}"
 private const val ROUTE_GRO_MILESTONES = "gro_milestones/{projectId}"
 private const val ARG_PROJECT_ID = "projectId"
-private const val DEMO_GOVERNANCE_PROJECT_ID = 1L
-
 private fun projectDetailsRoute(projectId: Long): String = "project_details/$projectId"
 private fun groRisksRoute(projectId: Long): String = "gro_risks/$projectId"
 private fun groMilestonesRoute(projectId: Long): String = "gro_milestones/$projectId"
@@ -118,6 +129,9 @@ private fun MainShell() {
     val destination = entry?.destination
     val context = LocalContext.current
 
+    val authRepository = remember { DataStoreAuthRepository(context.iamAuthDataStore) }
+    val iamViewModel: IamViewModel = viewModel(factory = IamViewModel.factory(authRepository))
+
     val ptoRepository = remember {
         OfflineFirstProjectRepository(PtoDatabase.create(context.applicationContext).projectDao())
     }
@@ -126,20 +140,45 @@ private fun MainShell() {
     val groDatabase = remember {
         GroDatabase.create(context.applicationContext)
     }
+    val riskRepository = remember { OfflineFirstRiskRepository(groDatabase.riskDao()) }
+    val milestoneRepository = remember { OfflineFirstMilestoneRepository(groDatabase.milestoneDao()) }
     val groViewModelFactory = remember {
         GroViewModel.factory(
-            riskRepository = OfflineFirstRiskRepository(groDatabase.riskDao()),
-            milestoneRepository = OfflineFirstMilestoneRepository(groDatabase.milestoneDao()),
+            riskRepository = riskRepository,
+            milestoneRepository = milestoneRepository,
         )
     }
+    val analyticsViewModel: AnalyticsViewModel = viewModel(
+        factory = AnalyticsViewModel.factory(
+            projectRepository = ptoRepository,
+            riskRepository = riskRepository,
+            milestoneRepository = milestoneRepository,
+        ),
+    )
 
     val onProjectFlow = destination?.route?.startsWith("project_details") == true
     val onGroFlow = destination?.route?.startsWith("gro_") == true
     val hideBottomBar = onProjectFlow || onGroFlow
+    var analyticsVisitNonce by remember { mutableIntStateOf(0) }
+    val isAnalyticsTab = destination?.route == Tab.Analytics.route
+    LaunchedEffect(isAnalyticsTab) {
+        if (isAnalyticsTab) {
+            analyticsVisitNonce++
+        }
+    }
 
-    Scaffold(
-        containerColor = Vx.Bg,
-        bottomBar = {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val onboardingStore = remember { OnboardingStore(context.onboardingDataStore) }
+    val onboardingCompleted by onboardingStore.hasCompletedOnboarding()
+        .collectAsStateWithLifecycle(initialValue = false)
+    var onboardingStep by rememberSaveable { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+
+    CompositionLocalProvider(LocalAppSnackbarHostState provides snackbarHostState) {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            bottomBar = {
             if (!hideBottomBar) {
                 NavigationBar(containerColor = Color.White) {
                     Tab.entries.forEach { tab ->
@@ -165,14 +204,30 @@ private fun MainShell() {
         },
     ) { inner ->
         val goProfile = { nav.navigateTab(Tab.Profile.route) }
+        val iamState by iamViewModel.uiState.collectAsStateWithLifecycle()
+        val displayName = iamState.user?.name
+        val openProject: (Long) -> Unit = { projectId ->
+            nav.navigate(projectDetailsRoute(projectId)) {
+                launchSingleTop = true
+            }
+        }
         NavHost(nav, startDestination = Tab.Home.route, modifier = Modifier.padding(inner)) {
-            composable(Tab.Home.route) { HomeScreen(goProfile) }
+            composable(Tab.Home.route) {
+                HomeScreen(
+                    viewModel = ptoViewModel,
+                    analyticsViewModel = analyticsViewModel,
+                    userDisplayName = displayName,
+                    onProjectClick = openProject,
+                    onOpenProjects = { nav.navigateTab(Tab.Projects.route) },
+                    onOpenAnalytics = { nav.navigateTab(Tab.Analytics.route) },
+                    onOpenGovernance = { nav.navigateTab(Tab.Governance.route) },
+                    onProfile = goProfile,
+                )
+            }
             composable(Tab.Projects.route) {
                 ProjectListScreen(
                     viewModel = ptoViewModel,
-                    onProjectClick = { projectId ->
-                        nav.navigate(projectDetailsRoute(projectId))
-                    },
+                    onProjectClick = openProject,
                 )
             }
             composable(
@@ -182,24 +237,57 @@ private fun MainShell() {
                 ),
             ) { backStackEntry ->
                 val projectId = backStackEntry.arguments?.getLong(ARG_PROJECT_ID) ?: return@composable
+                val groViewModel: GroViewModel = viewModel(
+                    key = "gro_$projectId",
+                    factory = groViewModelFactory,
+                )
                 LaunchedEffect(projectId) {
                     ptoViewModel.loadProjectDetails(projectId)
+                    groViewModel.loadGovernanceData(projectId)
                 }
                 ProjectDetailScreen(
                     viewModel = ptoViewModel,
+                    groViewModel = groViewModel,
                     onNavigateBack = { nav.popBackStack() },
+                    onNavigateToRisks = { id ->
+                        nav.navigateToGroRisks(id)
+                    },
+                    onNavigateToMilestones = { id ->
+                        nav.navigateToGroMilestones(id)
+                    },
                 )
             }
-            composable(Tab.Analytics.route) { AnalyticsScreen(goProfile) }
-            composable(Tab.Governance.route) {
-                GovernanceScreen(
+            composable(Tab.Analytics.route) {
+                AnalyticsScreen(
+                    viewModel = analyticsViewModel,
                     onProfile = goProfile,
-                    onOpenRiskMatrix = { projectId -> nav.navigate(groRisksRoute(projectId)) },
-                    onOpenMilestoneTimeline = { projectId -> nav.navigate(groMilestonesRoute(projectId)) },
-                    demoProjectId = DEMO_GOVERNANCE_PROJECT_ID,
+                    onOpenProjectRisks = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) {
+                            launchSingleTop = true
+                        }
+                        nav.navigateToGroRisks(projectId)
+                    },
+                    animationNonce = analyticsVisitNonce,
                 )
             }
-            composable(Tab.Profile.route) { ProfileScreen() }
+            composable(Tab.Governance.route) {
+                GovernanceHubScreen(
+                    ptoViewModel = ptoViewModel,
+                    analyticsViewModel = analyticsViewModel,
+                    onOpenProjectRisks = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) { launchSingleTop = true }
+                        nav.navigateToGroRisks(projectId)
+                    },
+                    onOpenProjectMilestones = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) { launchSingleTop = true }
+                        nav.navigateToGroMilestones(projectId)
+                    },
+                    onProfile = goProfile,
+                )
+            }
+            composable(Tab.Profile.route) {
+                ProfileScreen(viewModel = iamViewModel)
+            }
             composable(ROUTE_CREATE) { CreateProjectScreen(onClose = { nav.popBackStack() }) }
             composable(
                 route = ROUTE_GRO_RISKS,
@@ -243,6 +331,20 @@ private fun MainShell() {
             }
         }
     }
+
+        if (!onboardingCompleted) {
+            OnboardingDialog(
+                step = onboardingStep,
+                onNext = { onboardingStep++ },
+                onFinish = {
+                    scope.launch { onboardingStore.setOnboardingCompleted() }
+                },
+                onSkip = {
+                    scope.launch { onboardingStore.setOnboardingCompleted() }
+                },
+            )
+        }
+    }
 }
 
 private fun NavHostController.navigateTab(route: String) {
@@ -250,5 +352,17 @@ private fun NavHostController.navigateTab(route: String) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = true
+    }
+}
+
+private fun NavHostController.navigateToGroRisks(projectId: Long) {
+    navigate(groRisksRoute(projectId)) {
+        launchSingleTop = true
+    }
+}
+
+private fun NavHostController.navigateToGroMilestones(projectId: Long) {
+    navigate(groMilestonesRoute(projectId)) {
+        launchSingleTop = true
     }
 }

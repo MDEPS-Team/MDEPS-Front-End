@@ -55,6 +55,7 @@ fun RiskMatrixScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    CollectGroUiEvents(viewModel = viewModel)
     val risks by viewModel.risksState.collectAsStateWithLifecycle()
     val navigateBackDescription = stringResource(R.string.gro_a11y_navigate_back)
     val seedDemoDescription = stringResource(R.string.gro_a11y_seed_demo_data)

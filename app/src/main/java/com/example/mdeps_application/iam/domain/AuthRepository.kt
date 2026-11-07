@@ -8,4 +8,10 @@ interface AuthRepository {
     suspend fun saveToken(token: Token)
 
     fun getToken(): Flow<Token?>
+
+    suspend fun saveUserProfile(user: User)
+
+    fun observeUserProfile(): Flow<User?>
+
+    suspend fun saveProfileAvatarUri(uri: String)
 }

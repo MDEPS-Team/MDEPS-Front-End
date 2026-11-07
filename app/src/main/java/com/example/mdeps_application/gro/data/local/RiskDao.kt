@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface RiskDao {
 
+    @Query("SELECT * FROM risks ORDER BY id ASC")
+    fun observeAllRisks(): Flow<List<RiskEntity>>
+
     @Query("SELECT * FROM risks WHERE project_id = :projectId ORDER BY id ASC")
     fun observeRisksByProjectId(projectId: Long): Flow<List<RiskEntity>>
 

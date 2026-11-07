@@ -20,6 +20,27 @@ data class ProjectDetailUiState(
     val tasks: List<Task> = emptyList(),
 )
 
+data class HomePortfolioMetrics(
+    val activeProjectCount: Int = 0,
+    val pendingTaskCount: Int = 0,
+)
+
+data class ProjectWithProgress(
+    val project: Project,
+    val progress: Float,
+    val pendingTaskCount: Int,
+    val totalTaskCount: Int,
+)
+
+data class PortfolioDashboard(
+    val items: List<ProjectWithProgress> = emptyList(),
+    val globalProgress: Float = 0f,
+    val atRiskCount: Int = 0,
+    val inProgressCount: Int = 0,
+    val planningCount: Int = 0,
+    val completedCount: Int = 0,
+)
+
 class PtoViewModel(
     private val projectRepository: ProjectRepository,
 ) : ViewModel() {
@@ -27,15 +48,79 @@ class PtoViewModel(
     private val _projects = MutableStateFlow<List<Project>>(emptyList())
     val projects: StateFlow<List<Project>> = _projects.asStateFlow()
 
+    private val _homeMetrics = MutableStateFlow(HomePortfolioMetrics())
+    val homeMetrics: StateFlow<HomePortfolioMetrics> = _homeMetrics.asStateFlow()
+
+    private val _portfolioDashboard = MutableStateFlow(PortfolioDashboard())
+    val portfolioDashboard: StateFlow<PortfolioDashboard> = _portfolioDashboard.asStateFlow()
+
     private val _projectDetailState = MutableStateFlow(ProjectDetailUiState())
     val projectDetailState: StateFlow<ProjectDetailUiState> = _projectDetailState.asStateFlow()
 
     private var projectDetailsJob: Job? = null
 
+    private val _lastRefreshedAt = MutableStateFlow(System.currentTimeMillis())
+    val lastRefreshedAt: StateFlow<Long> = _lastRefreshedAt.asStateFlow()
+
+    fun markPortfolioRefreshed() {
+        _lastRefreshedAt.value = System.currentTimeMillis()
+    }
+
     init {
         viewModelScope.launch {
             projectRepository.observeProjects().collect { projectList ->
                 _projects.value = projectList
+            }
+        }
+        viewModelScope.launch {
+            combine(
+                projectRepository.observeActiveProjectCount(),
+                projectRepository.observePendingTaskCount(),
+            ) { activeProjects, pendingTasks ->
+                HomePortfolioMetrics(
+                    activeProjectCount = activeProjects,
+                    pendingTaskCount = pendingTasks,
+                )
+            }.collect { metrics ->
+                _homeMetrics.value = metrics
+            }
+        }
+        viewModelScope.launch {
+            combine(
+                projectRepository.observeProjects(),
+                projectRepository.observeAllTasks(),
+            ) { projects, tasks ->
+                val tasksByProject = tasks.groupBy { it.projectId }
+                val items = projects.map { project ->
+                    val projectTasks = tasksByProject[project.id].orEmpty()
+                    val completed = projectTasks.count { it.isCompleted }
+                    val progress = if (projectTasks.isEmpty()) {
+                        0f
+                    } else {
+                        completed.toFloat() / projectTasks.size
+                    }
+                    ProjectWithProgress(
+                        project = project,
+                        progress = progress,
+                        pendingTaskCount = projectTasks.count { !it.isCompleted },
+                        totalTaskCount = projectTasks.size,
+                    )
+                }
+                val globalProgress = if (items.isEmpty()) {
+                    0f
+                } else {
+                    items.map { it.progress }.average().toFloat()
+                }
+                PortfolioDashboard(
+                    items = items,
+                    globalProgress = globalProgress,
+                    atRiskCount = projects.count { it.status == ProjectStatus.AT_RISK },
+                    inProgressCount = projects.count { it.status == ProjectStatus.IN_PROGRESS },
+                    planningCount = projects.count { it.status == ProjectStatus.PLANNING },
+                    completedCount = projects.count { it.status == ProjectStatus.COMPLETED },
+                )
+            }.collect { dashboard ->
+                _portfolioDashboard.value = dashboard
             }
         }
     }

@@ -11,6 +11,12 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MilestoneDao {
 
+    @Query("SELECT * FROM milestones ORDER BY target_date ASC")
+    fun observeAllMilestones(): Flow<List<MilestoneEntity>>
+
+    @Query("SELECT * FROM milestones ORDER BY target_date ASC")
+    suspend fun getAllMilestonesOnce(): List<MilestoneEntity>
+
     @Query("SELECT * FROM milestones WHERE project_id = :projectId ORDER BY target_date ASC")
     fun observeMilestonesByProjectId(projectId: Long): Flow<List<MilestoneEntity>>
 

@@ -14,6 +14,12 @@ interface ProjectDao {
     @Query("SELECT * FROM projects ORDER BY name ASC")
     fun observeProjects(): Flow<List<ProjectEntity>>
 
+    @Query("SELECT COUNT(*) FROM projects WHERE status != 'COMPLETED'")
+    fun observeActiveProjectCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 0")
+    fun observePendingTaskCount(): Flow<Int>
+
     @Query("SELECT * FROM projects WHERE id = :projectId LIMIT 1")
     fun observeProjectById(projectId: Long): Flow<ProjectEntity?>
 
@@ -28,6 +34,9 @@ interface ProjectDao {
 
     @Query("DELETE FROM projects WHERE id = :projectId")
     suspend fun deleteProjectById(projectId: Long)
+
+    @Query("SELECT * FROM tasks ORDER BY id ASC")
+    fun observeAllTasks(): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks WHERE project_id = :projectId ORDER BY id ASC")
     fun observeTasksByProjectId(projectId: Long): Flow<List<TaskEntity>>
