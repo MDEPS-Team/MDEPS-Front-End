@@ -39,6 +39,21 @@ data class ProjectWithProgress(
     val totalTaskCount: Int,
 )
 
+data class UpcomingMilestone(
+    val milestone: Milestone,
+    val projectName: String,
+)
+
+/** Resumen de hitos del portafolio para el home: avance y agenda próxima. */
+data class MilestoneDigest(
+    val reached: Int = 0,
+    val total: Int = 0,
+    val upcoming: List<UpcomingMilestone> = emptyList(),
+) {
+    val pending: Int get() = total - reached
+    val reachedRate: Float get() = if (total == 0) 0f else reached.toFloat() / total
+}
+
 data class PortfolioDashboard(
     val items: List<ProjectWithProgress> = emptyList(),
     val globalProgress: Float = 0f,
@@ -62,6 +77,9 @@ class PtoViewModel(
 
     private val _portfolioDashboard = MutableStateFlow(PortfolioDashboard())
     val portfolioDashboard: StateFlow<PortfolioDashboard> = _portfolioDashboard.asStateFlow()
+
+    private val _milestoneDigest = MutableStateFlow(MilestoneDigest())
+    val milestoneDigest: StateFlow<MilestoneDigest> = _milestoneDigest.asStateFlow()
 
     private val _projectDetailState = MutableStateFlow(ProjectDetailUiState())
     val projectDetailState: StateFlow<ProjectDetailUiState> = _projectDetailState.asStateFlow()
@@ -92,6 +110,27 @@ class PtoViewModel(
                 )
             }.collect { metrics ->
                 _homeMetrics.value = metrics
+            }
+        }
+        viewModelScope.launch {
+            combine(
+                projectRepository.observeProjects(),
+                milestoneRepository.observeAllMilestones(),
+            ) { projects, milestones ->
+                val namesById = projects.associate { it.id to it.name }
+                // Solo hitos de proyectos existentes (evita huérfanos tras borrar un proyecto).
+                val scoped = milestones.filter { it.projectId in namesById }
+                MilestoneDigest(
+                    reached = scoped.count { it.isReached },
+                    total = scoped.size,
+                    upcoming = scoped
+                        .filter { !it.isReached }
+                        .sortedBy { it.targetDate }
+                        .take(UPCOMING_MILESTONES_LIMIT)
+                        .map { UpcomingMilestone(it, namesById.getValue(it.projectId)) },
+                )
+            }.collect { digest ->
+                _milestoneDigest.value = digest
             }
         }
         viewModelScope.launch {
@@ -278,6 +317,8 @@ class PtoViewModel(
     }
 
     companion object {
+        private const val UPCOMING_MILESTONES_LIMIT = 4
+
         private const val PROVISION_TASK_KICKOFF = "provision:kickoff"
         private const val PROVISION_TASK_RACI = "provision:raci"
 
