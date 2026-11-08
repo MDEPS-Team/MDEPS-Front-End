@@ -27,6 +27,10 @@ class OfflineFirstMilestoneRepository(
         milestoneDao.updateMilestone(milestone.toEntity())
     }
 
+    override suspend fun deleteMilestoneById(milestoneId: Long) {
+        milestoneDao.deleteMilestoneById(milestoneId)
+    }
+
     override suspend fun deleteMilestonesForProject(projectId: Long) {
         milestoneDao.deleteMilestonesByProjectId(projectId)
     }

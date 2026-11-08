@@ -2,15 +2,17 @@
 
 package com.example.mdeps_application.pto.ui
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -183,8 +185,13 @@ fun HomeScreen(
                         )
                     }
                     item {
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(momentum, key = { it.project.id }) { item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            momentum.forEach { item ->
                                 ProjectWorkbenchCard(
                                     item = item,
                                     onClick = { onProjectClick(item.project.id) },
@@ -203,7 +210,7 @@ fun HomeScreen(
                             subtitle = stringResource(R.string.home_section_risk_radar_sub),
                         )
                     }
-                    items(analytics.projectsWithHighRisks.take(5), key = { it.projectId }) { alert ->
+                    items(analytics.projectsWithHighRisks.take(5), key = { "home_hr_${it.projectId}" }) { alert ->
                         VxCard(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { onProjectClick(alert.projectId) },

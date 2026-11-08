@@ -7,10 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
+import com.example.mdeps_application.ui.Vx
+import com.example.mdeps_application.ui.VxCard
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -22,6 +20,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import com.example.mdeps_application.R
 
@@ -36,11 +35,7 @@ fun ProfileLanguagePreferenceSection(modifier: Modifier = Modifier) {
     val englishA11y = stringResource(R.string.profile_a11y_language_en)
     val spanishA11y = stringResource(R.string.profile_a11y_language_es)
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    VxCard(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -49,13 +44,14 @@ fun ProfileLanguagePreferenceSection(modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = stringResource(R.string.profile_preferences_title),
-                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Vx.Ink,
             )
             Text(
                 text = stringResource(R.string.profile_preferences_subtitle),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                color = Vx.Muted,
             )
             SingleChoiceSegmentedButtonRow(
                 modifier = Modifier

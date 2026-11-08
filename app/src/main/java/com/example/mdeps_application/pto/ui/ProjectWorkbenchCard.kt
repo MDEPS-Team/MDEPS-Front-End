@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -54,7 +55,7 @@ fun ProjectWorkbenchCard(
             .fillMaxWidth()
             .semantics { contentDescription = cardContentDescription },
         onClick = onClick,
-        containerColor = if (atRisk) Vx.RedSoft.copy(alpha = 0.35f) else Vx.Bg,
+        containerColor = if (atRisk) Vx.RedSoft else Color.White,
     ) {
         Column(Modifier.padding(if (compact) 12.dp else 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

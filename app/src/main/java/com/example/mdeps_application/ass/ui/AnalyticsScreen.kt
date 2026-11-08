@@ -22,8 +22,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,7 +43,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import com.example.mdeps_application.ui.Vx
+import com.example.mdeps_application.ui.VxTopBar
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -70,12 +74,14 @@ fun AnalyticsScreen(
     viewModel: AnalyticsViewModel,
     onProfile: () -> Unit,
     onOpenProjectRisks: (Long) -> Unit,
+    onOpenGovernanceForProject: (Long) -> Unit,
     animationNonce: Int,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lastRefreshedAt by viewModel.lastRefreshedAt.collectAsStateWithLifecycle()
     var showRiskDrillDown by remember { mutableStateOf(false) }
+    var showExportSheet by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -108,21 +114,22 @@ fun AnalyticsScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = Vx.Bg,
         topBar = {
-            TopAppBar(
+            VxTopBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Default.Info,
+                            imageVector = Icons.Default.Analytics,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = Vx.Blue,
                             modifier = Modifier.size(22.dp),
                         )
                         Text(
                             text = stringResource(R.string.ass_analytics_title),
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(start = 8.dp),
+                            color = Vx.Ink,
                         )
                     }
                 },
@@ -159,38 +166,16 @@ fun AnalyticsScreen(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text(
-                text = stringResource(R.string.ass_analytics_subtitle),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = stringResource(R.string.ass_analytics_headline),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-            )
-
-            GlobalProgressCard(
+            AnalyticsIntelligenceDashboard(
+                uiState = uiState,
+                efficiencyPercent = animatedEfficiency,
                 globalProgress = animatedGlobalProgress,
-                progressDescription = progressDescription,
+                selectedPeriod = uiState.selectedPeriod,
+                onPeriodSelected = { viewModel.setAnalyticsPeriod(it) },
+                onExport = { showExportSheet = true },
+                onOpenRisks = { showRiskDrillDown = true },
+                onOpenGovernanceProject = onOpenGovernanceForProject,
             )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                OperativeEfficiencyCard(
-                    efficiencyPercent = animatedEfficiency,
-                    modifier = Modifier.weight(1f),
-                )
-                CriticalRisksCard(
-                    activeCriticalRisks = uiState.activeCriticalRisks,
-                    onClick = { showRiskDrillDown = true },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
             Text(
                 text = stringResource(R.string.ass_data_disclaimer),
                 style = MaterialTheme.typography.bodySmall,
@@ -208,6 +193,13 @@ fun AnalyticsScreen(
                 showRiskDrillDown = false
                 onOpenProjectRisks(projectId)
             },
+        )
+    }
+    if (showExportSheet) {
+        AnalyticsExportSheet(
+            visible = showExportSheet,
+            uiState = uiState,
+            onDismiss = { showExportSheet = false },
         )
     }
 }

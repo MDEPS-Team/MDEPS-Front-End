@@ -29,6 +29,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,15 +61,24 @@ fun RiskMatrixScreen(
     CollectGroUiEvents(viewModel = viewModel)
     val risks by viewModel.risksState.collectAsStateWithLifecycle()
     val navigateBackDescription = stringResource(R.string.gro_a11y_navigate_back)
-    val seedDemoDescription = stringResource(R.string.gro_a11y_seed_demo_data)
+    val addRiskDescription = stringResource(R.string.gro_a11y_add_risk)
+    var showAddDialog by remember { mutableStateOf(false) }
+
+    AddRiskDialog(
+        visible = showAddDialog,
+        onDismiss = { showAddDialog = false },
+        onConfirm = { title, description ->
+            viewModel.addCustomRisk(projectId, title, description)
+        },
+    )
 
     RiskMatrixContent(
         risks = risks,
         onRiskSwiped = viewModel::resolveRisk,
         onNavigateBack = onNavigateBack,
-        onSeedDemoData = { viewModel.addCorporateDummyData(projectId) },
+        onAddRisk = { showAddDialog = true },
         navigateBackDescription = navigateBackDescription,
-        seedDemoDescription = seedDemoDescription,
+        addRiskDescription = addRiskDescription,
         modifier = modifier,
     )
 }
@@ -76,9 +88,9 @@ internal fun RiskMatrixContent(
     risks: List<Risk>,
     onRiskSwiped: (Risk) -> Unit,
     onNavigateBack: () -> Unit,
-    onSeedDemoData: () -> Unit,
+    onAddRisk: () -> Unit,
     navigateBackDescription: String,
-    seedDemoDescription: String,
+    addRiskDescription: String,
     modifier: Modifier = Modifier,
 ) {
     val swipeToResolveDescription = stringResource(R.string.gro_a11y_swipe_to_resolve)
@@ -106,27 +118,16 @@ internal fun RiskMatrixContent(
                         )
                     }
                 },
-                actions = {
-                    IconButton(
-                        onClick = onSeedDemoData,
-                        modifier = Modifier.semantics { contentDescription = seedDemoDescription },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = seedDemoDescription,
-                        )
-                    }
-                },
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onSeedDemoData,
-                modifier = Modifier.semantics { contentDescription = seedDemoDescription },
+                onClick = onAddRisk,
+                modifier = Modifier.semantics { contentDescription = addRiskDescription },
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = seedDemoDescription,
+                    contentDescription = addRiskDescription,
                 )
             }
         },
@@ -233,9 +234,9 @@ private fun RiskMatrixScreenPreview() {
             ),
             onRiskSwiped = {},
             onNavigateBack = {},
-            onSeedDemoData = {},
+            onAddRisk = {},
             navigateBackDescription = "Back",
-            seedDemoDescription = "Seed",
+            addRiskDescription = "Add",
         )
     }
 }

@@ -36,10 +36,7 @@ class IamViewModel(
             authRepository.observeUserProfile().collect { profileUser ->
                 if (profileUser != null) {
                     _uiState.update { current ->
-                        current.copy(
-                            user = profileUser,
-                            isAuthenticated = current.isAuthenticated || profileUser.id.isNotBlank(),
-                        )
+                        current.copy(user = profileUser)
                     }
                 }
             }
@@ -117,6 +114,17 @@ class IamViewModel(
 
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    /** Limpia el flag de sesión sin borrar el perfil guardado (evita re-entro automático al login). */
+    fun endActiveSession() {
+        _uiState.update {
+            it.copy(
+                isAuthenticated = false,
+                isLoading = false,
+                errorMessage = null,
+            )
+        }
     }
 
     fun saveProfileAvatar(contentResolver: ContentResolver, uri: Uri) {

@@ -2,6 +2,7 @@
 
 package com.example.mdeps_application.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,39 +39,111 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 // ───────────────────────── DESIGN TOKENS (extraídos de los mockups) ─────────────────────────
+
+@Immutable
+data class VxPalette(
+    val bg: Color,
+    val surface: Color,
+    val ink: Color,
+    val muted: Color,
+    val line: Color,
+    val chip: Color,
+    val blueSoft: Color,
+    val greenSoft: Color,
+    val redSoft: Color,
+    val gray: Color,
+)
+
+val VxPaletteLight = VxPalette(
+    bg = Color(0xFFF3F5F9),
+    surface = Color(0xFFFFFFFF),
+    ink = Color(0xFF1A1F2B),
+    muted = Color(0xFF677084),
+    line = Color(0xFFE4E8EF),
+    chip = Color(0xFFEDF0F5),
+    blueSoft = Color(0xFFE3ECFC),
+    greenSoft = Color(0xFFDDF3E8),
+    redSoft = Color(0xFFFBE4E2),
+    gray = Color(0xFFC4CBD8),
+)
+
+val VxPaletteDark = VxPalette(
+    bg = Color(0xFF0E1118),
+    surface = Color(0xFF171C26),
+    ink = Color(0xFFE8ECF4),
+    muted = Color(0xFF9DA8BC),
+    line = Color(0xFF2E3646),
+    chip = Color(0xFF222833),
+    blueSoft = Color(0xFF1A3055),
+    greenSoft = Color(0xFF153328),
+    redSoft = Color(0xFF3D2220),
+    gray = Color(0xFF4A5364),
+)
+
+val LocalVxPalette = compositionLocalOf { VxPaletteLight }
+
 object Vx {
     val Blue = Color(0xFF0B57D0)
-    val BlueSoft = Color(0xFFE3ECFC)
-    val Bg = Color(0xFFF3F5F9)
-    val Ink = Color(0xFF1A1F2B)
-    val Muted = Color(0xFF677084)
-    val Line = Color(0xFFE4E8EF)
-    val Chip = Color(0xFFEDF0F5)
-    val Gray = Color(0xFFC4CBD8)
     val Green = Color(0xFF0B7A4B)
-    val GreenSoft = Color(0xFFDDF3E8)
     val Red = Color(0xFFB3261E)
-    val RedSoft = Color(0xFFFBE4E2)
     val Teal = Color(0xFF4FD1B0)
+
+    val Bg: Color
+        @Composable get() = LocalVxPalette.current.bg
+    val Surface: Color
+        @Composable get() = LocalVxPalette.current.surface
+    val Ink: Color
+        @Composable get() = LocalVxPalette.current.ink
+    val Muted: Color
+        @Composable get() = LocalVxPalette.current.muted
+    val Line: Color
+        @Composable get() = LocalVxPalette.current.line
+    val Chip: Color
+        @Composable get() = LocalVxPalette.current.chip
+    val BlueSoft: Color
+        @Composable get() = LocalVxPalette.current.blueSoft
+    val GreenSoft: Color
+        @Composable get() = LocalVxPalette.current.greenSoft
+    val RedSoft: Color
+        @Composable get() = LocalVxPalette.current.redSoft
+    val Gray: Color
+        @Composable get() = LocalVxPalette.current.gray
 }
 
 // ───────────────────────── COMPONENTES COMPARTIDOS ─────────────────────────
 
-/** Tarjeta blanca con esquinas redondeadas; ripple automático cuando recibe onClick. */
+/** Tarjeta plana con borde suave; evita artefactos de sombra en fondos tintados. */
 @Composable
 fun VxCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
-    containerColor: Color = Color.White,
+    containerColor: Color? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val resolvedSurface = containerColor ?: Vx.Surface
     val shape = RoundedCornerShape(16.dp)
-    val colors = CardDefaults.cardColors(containerColor = containerColor)
-    val elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    val colors = CardDefaults.cardColors(containerColor = resolvedSurface)
+    val elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    val border = BorderStroke(1.dp, Vx.Line)
     if (onClick != null) {
-        Card(onClick = onClick, modifier = modifier, shape = shape, colors = colors, elevation = elevation, content = content)
+        Card(
+            onClick = onClick,
+            modifier = modifier,
+            shape = shape,
+            colors = colors,
+            elevation = elevation,
+            border = border,
+            content = content,
+        )
     } else {
-        Card(modifier = modifier, shape = shape, colors = colors, elevation = elevation, content = content)
+        Card(
+            modifier = modifier,
+            shape = shape,
+            colors = colors,
+            elevation = elevation,
+            border = border,
+            content = content,
+        )
     }
 }
 

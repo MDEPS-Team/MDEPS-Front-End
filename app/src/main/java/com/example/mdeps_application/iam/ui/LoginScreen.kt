@@ -82,8 +82,10 @@ fun LoginScreen(
     val biometricSuccessMessage = stringResource(R.string.iam_biometric_success)
     val biometricUnavailableMessage = stringResource(R.string.iam_biometric_unavailable)
 
-    LaunchedEffect(uiState.isAuthenticated) {
-        if (uiState.isAuthenticated) {
+    var allowAutoEnter by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.isAuthenticated, allowAutoEnter) {
+        if (uiState.isAuthenticated && allowAutoEnter) {
             onLoginSuccess()
         }
     }
@@ -112,6 +114,7 @@ fun LoginScreen(
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(biometricSuccessMessage)
                     }
+                    allowAutoEnter = true
                     viewModel.signInWithBiometrics()
                 },
                 onError = { errorCode, errorMessage ->
@@ -208,7 +211,10 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = { viewModel.signIn(corporateEmail, password) },
+                    onClick = {
+                        allowAutoEnter = true
+                        viewModel.signIn(corporateEmail, password)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)

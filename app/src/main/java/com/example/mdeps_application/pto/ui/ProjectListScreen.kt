@@ -2,8 +2,9 @@
 
 package com.example.mdeps_application.pto.ui
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,17 +17,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,11 +35,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,30 +47,43 @@ import com.example.mdeps_application.pto.application.ProjectWithProgress
 import com.example.mdeps_application.pto.application.PtoViewModel
 import com.example.mdeps_application.pto.domain.ProjectStatus
 import com.example.mdeps_application.ui.Caption
-import com.example.mdeps_application.ui.Pill
 import com.example.mdeps_application.ui.Vx
+import com.example.mdeps_application.ui.VxCard
 import com.example.mdeps_application.ui.VxTopBar
 
-private enum class ProjectRegistrySort {
-    STATUS,
-    NAME,
-    PROGRESS,
+private enum class ProjectHubFilter {
+    ALL,
+    IN_PROGRESS,
+    CRITICAL,
+    COMPLETED,
 }
 
 @Composable
 fun ProjectListScreen(
     viewModel: PtoViewModel,
+    riskCountByProject: Map<Long, Int>,
     onProjectClick: (Long) -> Unit,
+    onCreateProject: () -> Unit,
+    onOpenProjectRisks: (Long) -> Unit,
+    onOpenAnalytics: () -> Unit,
 ) {
     val dashboard by viewModel.portfolioDashboard.collectAsStateWithLifecycle()
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var showCompleted by rememberSaveable { mutableStateOf(false) }
-    var sortMode by rememberSaveable { mutableStateOf(ProjectRegistrySort.STATUS) }
+    var filter by rememberSaveable { mutableStateOf(ProjectHubFilter.ALL) }
+    var projectPendingDelete by remember { mutableStateOf<ProjectWithProgress?>(null) }
+    val deleteProjectDescription = stringResource(R.string.pto_a11y_delete_project)
 
-    val filtered = remember(dashboard.items, searchQuery, showCompleted, sortMode) {
+    val activeCount = dashboard.items.count { it.project.status != ProjectStatus.COMPLETED }
+    val filtered = remember(dashboard.items, searchQuery, filter) {
         var list = dashboard.items
-        if (!showCompleted) {
-            list = list.filter { it.project.status != ProjectStatus.COMPLETED }
+        list = when (filter) {
+            ProjectHubFilter.ALL -> list
+            ProjectHubFilter.IN_PROGRESS -> list.filter { it.project.status == ProjectStatus.IN_PROGRESS }
+            ProjectHubFilter.CRITICAL -> list.filter {
+                it.project.status == ProjectStatus.AT_RISK ||
+                    (riskCountByProject[it.project.id] ?: 0) > 0
+            }
+            ProjectHubFilter.COMPLETED -> list.filter { it.project.status == ProjectStatus.COMPLETED }
         }
         if (searchQuery.isNotBlank()) {
             val q = searchQuery.trim().lowercase()
@@ -80,29 +92,14 @@ fun ProjectListScreen(
                     it.project.description.lowercase().contains(q)
             }
         }
-        when (sortMode) {
-            ProjectRegistrySort.NAME -> list.sortedBy { it.project.name.lowercase() }
-            ProjectRegistrySort.PROGRESS -> list.sortedBy { it.progress }
-            ProjectRegistrySort.STATUS -> list.sortedWith(
-                compareBy<ProjectWithProgress> { statusOrder(it.project.status) }
-                    .thenBy { it.project.name },
-            )
-        }
+        list.sortedWith(
+            compareByDescending<ProjectWithProgress> { riskCountByProject[it.project.id] ?: 0 }
+                .thenBy { it.project.status == ProjectStatus.AT_RISK }
+                .thenByDescending { it.progress },
+        )
     }
 
-    val grouped = remember(filtered, sortMode) {
-        if (sortMode == ProjectRegistrySort.STATUS) {
-            filtered.groupBy { it.project.status }
-        } else {
-            mapOf(ProjectStatus.IN_PROGRESS to filtered)
-        }
-    }
-
-    var showCreateSheet by rememberSaveable { mutableStateOf(false) }
-    var projectPendingDelete by remember { mutableStateOf<ProjectWithProgress?>(null) }
-    val addProjectDescription = stringResource(R.string.pto_a11y_add_project)
-    val openProjectDescription = stringResource(R.string.pto_a11y_project_card)
-    val deleteProjectDescription = stringResource(R.string.pto_a11y_delete_project)
+    val globalProgressPercent = (dashboard.globalProgress * 100).toInt()
 
     Scaffold(
         containerColor = Vx.Bg,
@@ -111,35 +108,17 @@ fun ProjectListScreen(
                 title = {
                     Column {
                         Text(
-                            text = stringResource(R.string.pto_registry_title),
+                            text = stringResource(R.string.pto_hub_title),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
+                            fontSize = 22.sp,
                             color = Vx.Ink,
                         )
                         Text(
-                            text = stringResource(
-                                R.string.pto_registry_subtitle,
-                                dashboard.items.size,
-                                dashboard.atRiskCount,
-                            ),
+                            text = stringResource(R.string.pto_hub_subtitle, activeCount),
                             fontSize = 12.sp,
                             color = Vx.Muted,
                         )
                     }
-                },
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showCreateSheet = true },
-                modifier = Modifier.semantics { contentDescription = addProjectDescription },
-                containerColor = Vx.Blue,
-                contentColor = Vx.Bg,
-                icon = {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                },
-                text = {
-                    Text(stringResource(R.string.pto_registry_new_initiative))
                 },
             )
         },
@@ -152,129 +131,148 @@ fun ProjectListScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                RegistrySummaryRow(
-                    total = dashboard.items.size,
-                    atRisk = dashboard.atRiskCount,
-                    pendingTasks = dashboard.items.sumOf { it.pendingTaskCount },
-                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HubKpi(
+                        title = stringResource(R.string.pto_hub_kpi_budget),
+                        value = "$globalProgressPercent%",
+                        subtitle = stringResource(R.string.pto_hub_kpi_budget_sub),
+                        modifier = Modifier.weight(1f),
+                    )
+                    HubKpi(
+                        title = stringResource(R.string.pto_hub_kpi_tasks),
+                        value = "${dashboard.items.sumOf { it.pendingTaskCount }}",
+                        subtitle = stringResource(R.string.pto_hub_kpi_tasks_sub),
+                        modifier = Modifier.weight(1f),
+                    )
+                    HubKpi(
+                        title = stringResource(R.string.pto_hub_kpi_risk),
+                        value = dashboard.atRiskCount.toString(),
+                        subtitle = stringResource(R.string.pto_hub_kpi_risk_sub),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
             item {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(stringResource(R.string.pto_registry_search_hint)) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = androidx.compose.ui.graphics.Color.White,
-                        unfocusedContainerColor = androidx.compose.ui.graphics.Color.White,
-                    ),
-                )
+                VxCard(Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text(stringResource(R.string.pto_hub_search_hint)) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                        ),
+                    )
+                }
             }
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    FilterChip(
-                        selected = showCompleted,
-                        onClick = { showCompleted = !showCompleted },
-                        label = { Text(stringResource(R.string.pto_registry_show_completed)) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Vx.BlueSoft,
-                        ),
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        SortChip(
-                            selected = sortMode == ProjectRegistrySort.STATUS,
-                            label = stringResource(R.string.pto_registry_sort_status),
-                            onClick = { sortMode = ProjectRegistrySort.STATUS },
-                        )
-                        SortChip(
-                            selected = sortMode == ProjectRegistrySort.NAME,
-                            label = stringResource(R.string.pto_registry_sort_name),
-                            onClick = { sortMode = ProjectRegistrySort.NAME },
-                        )
-                        SortChip(
-                            selected = sortMode == ProjectRegistrySort.PROGRESS,
-                            label = stringResource(R.string.pto_registry_sort_progress),
-                            onClick = { sortMode = ProjectRegistrySort.PROGRESS },
+                    ProjectHubFilter.entries.forEach { chip ->
+                        val count = when (chip) {
+                            ProjectHubFilter.ALL -> dashboard.items.size
+                            ProjectHubFilter.IN_PROGRESS -> dashboard.inProgressCount
+                            ProjectHubFilter.CRITICAL -> dashboard.items.count {
+                                it.project.status == ProjectStatus.AT_RISK ||
+                                    (riskCountByProject[it.project.id] ?: 0) > 0
+                            }
+                            ProjectHubFilter.COMPLETED -> dashboard.completedCount
+                        }
+                        FilterChip(
+                            selected = filter == chip,
+                            onClick = { filter = chip },
+                            label = { Text(stringResource(hubFilterLabelRes(chip), count)) },
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Vx.BlueSoft),
                         )
                     }
                 }
             }
-            if (filtered.isEmpty()) {
+            if (dashboard.items.isEmpty()) {
                 item {
                     Text(
                         text = stringResource(R.string.pto_empty_projects),
-                        modifier = Modifier.padding(24.dp),
                         color = Vx.Muted,
+                        modifier = Modifier.padding(16.dp),
                     )
                 }
-            } else if (sortMode == ProjectRegistrySort.STATUS) {
-                ProjectStatus.entries.forEach { status ->
-                    val sectionItems = grouped[status].orEmpty()
-                    if (sectionItems.isNotEmpty()) {
-                        item(key = "header_$status") {
-                            SectionRegistryHeader(status = status, count = sectionItems.size)
-                        }
-                        items(sectionItems, key = { it.project.id }) { item ->
-                            ProjectWorkbenchCard(
-                                item = item,
-                                onClick = { onProjectClick(item.project.id) },
-                                cardContentDescription = openProjectDescription,
-                                onDelete = { projectPendingDelete = item },
-                                deleteContentDescription = deleteProjectDescription,
-                            )
+            } else if (filtered.isEmpty()) {
+                item {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = stringResource(R.string.pto_hub_no_filter_results),
+                            color = Vx.Muted,
+                        )
+                        TextButton(
+                            onClick = {
+                                filter = ProjectHubFilter.ALL
+                                searchQuery = ""
+                            },
+                        ) {
+                            Text(stringResource(R.string.pto_hub_clear_filters))
                         }
                     }
                 }
             } else {
                 items(filtered, key = { it.project.id }) { item ->
-                    ProjectWorkbenchCard(
+                    val highRisks = riskCountByProject[item.project.id] ?: 0
+                    PortfolioHubProjectCard(
                         item = item,
-                        onClick = { onProjectClick(item.project.id) },
-                        cardContentDescription = openProjectDescription,
+                        highRiskCount = highRisks,
+                        onOpenBoard = { onProjectClick(item.project.id) },
+                        onResolveAlerts = { onOpenProjectRisks(item.project.id) },
+                        onOpenAnalytics = onOpenAnalytics,
                         onDelete = { projectPendingDelete = item },
                         deleteContentDescription = deleteProjectDescription,
                     )
                 }
             }
+            item {
+                VxCard(Modifier.fillMaxWidth(), containerColor = Vx.Blue) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text(stringResource(R.string.pto_hub_cta_title), color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(
+                            stringResource(R.string.pto_hub_cta_body),
+                            color = Color.White.copy(alpha = 0.9f),
+                            modifier = Modifier.padding(top = 6.dp),
+                            fontSize = 12.sp,
+                        )
+                        Button(
+                            onClick = onCreateProject,
+                            modifier = Modifier.padding(top = 12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Vx.Blue),
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Text(stringResource(R.string.pto_hub_cta_button), modifier = Modifier.padding(start = 4.dp))
+                        }
+                    }
+                }
+            }
         }
     }
-
-    ProjectCreateSheet(
-        visible = showCreateSheet,
-        onDismiss = { showCreateSheet = false },
-        onCreate = { name, description, status ->
-            viewModel.createProject(name, description, status)
-        },
-    )
 
     projectPendingDelete?.let { item ->
         AlertDialog(
             onDismissRequest = { projectPendingDelete = null },
             title = { Text(stringResource(R.string.pto_delete_project_title)) },
             text = {
-                Text(
-                    stringResource(
-                        R.string.pto_delete_project_message,
-                        item.project.localizedDisplayName(),
-                    ),
-                )
+                Text(stringResource(R.string.pto_delete_project_message, item.project.localizedDisplayName()))
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.deleteProject(item.project.id)
-                        projectPendingDelete = null
-                    },
-                ) {
-                    Text(stringResource(R.string.pto_delete_project_confirm))
-                }
+                TextButton(onClick = {
+                    viewModel.deleteProject(item.project.id)
+                    projectPendingDelete = null
+                }) { Text(stringResource(R.string.pto_delete_project_confirm)) }
             },
             dismissButton = {
                 TextButton(onClick = { projectPendingDelete = null }) {
@@ -285,69 +283,25 @@ fun ProjectListScreen(
     }
 }
 
+private fun hubFilterLabelRes(filter: ProjectHubFilter): Int = when (filter) {
+    ProjectHubFilter.ALL -> R.string.pto_hub_filter_all
+    ProjectHubFilter.IN_PROGRESS -> R.string.pto_hub_filter_progress
+    ProjectHubFilter.CRITICAL -> R.string.pto_hub_filter_critical
+    ProjectHubFilter.COMPLETED -> R.string.pto_hub_filter_done
+}
+
 @Composable
-private fun RegistrySummaryRow(
-    total: Int,
-    atRisk: Int,
-    pendingTasks: Int,
+private fun HubKpi(
+    title: String,
+    value: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Vx.BlueSoft, RoundedCornerShape(14.dp))
-            .padding(14.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-    ) {
-        SummaryPill(stringResource(R.string.pto_registry_stat_total), total.toString())
-        SummaryPill(stringResource(R.string.pto_registry_stat_at_risk), atRisk.toString())
-        SummaryPill(stringResource(R.string.pto_registry_stat_open_tasks), pendingTasks.toString())
+    VxCard(modifier) {
+        Column(Modifier.padding(12.dp)) {
+            Caption(text = title, color = Vx.Muted)
+            Text(value, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Vx.Blue)
+            Text(subtitle, fontSize = 10.sp, color = Vx.Muted)
+        }
     }
-}
-
-@Composable
-private fun SummaryPill(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = value, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Vx.Blue)
-        Caption(text = label, color = Vx.Muted)
-    }
-}
-
-@Composable
-private fun SortChip(selected: Boolean, label: String, onClick: () -> Unit) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label, fontSize = 11.sp) },
-        leadingIcon = if (selected) {
-            { Icon(Icons.Default.Sort, contentDescription = null, modifier = Modifier.padding(0.dp)) }
-        } else {
-            null
-        },
-    )
-}
-
-@Composable
-private fun SectionRegistryHeader(status: ProjectStatus, count: Int) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = status.localizedLabel(),
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
-            color = Vx.Ink,
-        )
-        Pill(text = count.toString(), bg = Vx.Chip, fg = Vx.Muted)
-    }
-}
-
-private fun statusOrder(status: ProjectStatus): Int = when (status) {
-    ProjectStatus.AT_RISK -> 0
-    ProjectStatus.IN_PROGRESS -> 1
-    ProjectStatus.PLANNING -> 2
-    ProjectStatus.COMPLETED -> 3
 }

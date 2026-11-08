@@ -27,6 +27,10 @@ class OfflineFirstRiskRepository(
         riskDao.updateRisk(risk.toEntity())
     }
 
+    override suspend fun deleteRiskById(riskId: Long) {
+        riskDao.deleteRiskById(riskId)
+    }
+
     override suspend fun deleteRisksForProject(projectId: Long) {
         riskDao.deleteRisksByProjectId(projectId)
     }

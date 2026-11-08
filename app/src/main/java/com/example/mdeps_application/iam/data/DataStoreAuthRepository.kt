@@ -75,6 +75,21 @@ class DataStoreAuthRepository(
         }
     }
 
+    override suspend fun updateUserEmail(email: String) {
+        val trimmed = email.trim()
+        require(trimmed.isNotBlank()) { "Email is required." }
+        dataStore.edit { preferences ->
+            preferences[KEY_USER_EMAIL] = trimmed
+        }
+    }
+
+    override suspend fun clearSession() {
+        dataStore.edit { preferences ->
+            preferences.remove(KEY_ACCESS_TOKEN)
+            preferences.remove(KEY_REFRESH_TOKEN)
+        }
+    }
+
     private companion object {
         const val MOCK_NETWORK_DELAY_MS = 800L
 
@@ -88,7 +103,7 @@ class DataStoreAuthRepository(
 
         val MOCK_USER = User(
             id = "usr-ent-88492",
-            email = "alex.vance@corporationenterprise.com",
+            email = "alex.vance@enterprise.com",
             name = "Alejandro Vance Rivas",
             role = "Senior Delivery & PMO Director",
             avatarUrl = null,

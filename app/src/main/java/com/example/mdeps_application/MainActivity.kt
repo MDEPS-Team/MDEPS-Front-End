@@ -56,8 +56,11 @@ import com.example.mdeps_application.gro.data.local.GroDatabase
 import com.example.mdeps_application.gro.ui.MilestoneTimelineScreen
 import com.example.mdeps_application.gro.ui.RiskMatrixScreen
 import com.example.mdeps_application.iam.application.IamViewModel
+import com.example.mdeps_application.iam.application.ProfileViewModel
 import com.example.mdeps_application.iam.data.DataStoreAuthRepository
+import com.example.mdeps_application.iam.data.ProfilePreferencesStore
 import com.example.mdeps_application.iam.data.iamAuthDataStore
+import com.example.mdeps_application.iam.data.profileDataStore
 import com.example.mdeps_application.iam.ui.LoginScreen
 import com.example.mdeps_application.iam.ui.ProfileScreen
 import com.example.mdeps_application.pto.application.PtoViewModel
@@ -65,11 +68,14 @@ import com.example.mdeps_application.pto.data.OfflineFirstProjectRepository
 import com.example.mdeps_application.pto.data.local.PtoDatabase
 import com.example.mdeps_application.pto.ui.HomeScreen
 import com.example.mdeps_application.pto.ui.ProjectDetailScreen
+import com.example.mdeps_application.pto.ui.CreateInitiativeScreen
 import com.example.mdeps_application.pto.ui.ProjectListScreen
 import com.example.mdeps_application.app.data.OnboardingStore
 import com.example.mdeps_application.app.data.onboardingDataStore
+import com.example.mdeps_application.app.data.GovernancePreferencesStore
+import com.example.mdeps_application.app.data.governanceDataStore
+import com.example.mdeps_application.gro.application.GovernanceHubViewModel
 import com.example.mdeps_application.gro.ui.GovernanceHubScreen
-import com.example.mdeps_application.ui.CreateProjectScreen
 import com.example.mdeps_application.ui.LocalAppSnackbarHostState
 import com.example.mdeps_application.ui.OnboardingDialog
 import com.example.mdeps_application.ui.Vx
@@ -82,9 +88,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MDEPS_APPLICATIONTheme(darkTheme = false) {
-                VantagePmoApp()
-            }
+            VantagePmoApp()
         }
     }
 }
@@ -113,23 +117,29 @@ private enum class Tab(
 
 @Composable
 fun VantagePmoApp() {
-    var loggedIn by rememberSaveable { mutableStateOf(false) }
+    // No recordar sesión entre reinicios fríos: obliga pantalla de acceso (email o biometría).
+    var sessionUnlocked by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val profilePreferencesStore = remember { ProfilePreferencesStore(context.profileDataStore) }
+    val darkStudio by profilePreferencesStore.observeDarkStudioTheme()
+        .collectAsStateWithLifecycle(initialValue = false)
 
-    if (!loggedIn) {
-        val context = LocalContext.current
-        val authRepository = remember { DataStoreAuthRepository(context.iamAuthDataStore) }
-        val iamViewModel: IamViewModel = viewModel(factory = IamViewModel.factory(authRepository))
-        LoginScreen(
-            viewModel = iamViewModel,
-            onLoginSuccess = { loggedIn = true },
-        )
-    } else {
-        MainShell()
+    MDEPS_APPLICATIONTheme(darkTheme = darkStudio) {
+        if (!sessionUnlocked) {
+            val authRepository = remember { DataStoreAuthRepository(context.iamAuthDataStore) }
+            val iamViewModel: IamViewModel = viewModel(factory = IamViewModel.factory(authRepository))
+            LoginScreen(
+                viewModel = iamViewModel,
+                onLoginSuccess = { sessionUnlocked = true },
+            )
+        } else {
+            MainShell(onLogout = { sessionUnlocked = false })
+        }
     }
 }
 
 @Composable
-private fun MainShell() {
+private fun MainShell(onLogout: () -> Unit) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val destination = entry?.destination
@@ -157,6 +167,7 @@ private fun MainShell() {
         GroViewModel.factory(
             riskRepository = riskRepository,
             milestoneRepository = milestoneRepository,
+            projectRepository = ptoRepository,
         )
     }
     val analyticsViewModel: AnalyticsViewModel = viewModel(
@@ -164,6 +175,26 @@ private fun MainShell() {
             projectRepository = ptoRepository,
             riskRepository = riskRepository,
             milestoneRepository = milestoneRepository,
+        ),
+    )
+    val governancePreferencesStore = remember { GovernancePreferencesStore(context.governanceDataStore) }
+    val governanceHubViewModel: GovernanceHubViewModel = viewModel(
+        factory = GovernanceHubViewModel.factory(
+            preferencesStore = governancePreferencesStore,
+            projectRepository = ptoRepository,
+            riskRepository = riskRepository,
+            milestoneRepository = milestoneRepository,
+        ),
+    )
+    val profilePreferencesStore = remember { ProfilePreferencesStore(context.profileDataStore) }
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModel.factory(
+            authRepository = authRepository,
+            profilePreferencesStore = profilePreferencesStore,
+            projectRepository = ptoRepository,
+            riskRepository = riskRepository,
+            milestoneRepository = milestoneRepository,
+            governancePreferencesStore = governancePreferencesStore,
         ),
     )
 
@@ -181,7 +212,7 @@ private fun MainShell() {
     val snackbarHostState = remember { SnackbarHostState() }
     val onboardingStore = remember { OnboardingStore(context.onboardingDataStore) }
     val onboardingCompleted by onboardingStore.hasCompletedOnboarding()
-        .collectAsStateWithLifecycle(initialValue = false)
+        .collectAsStateWithLifecycle(initialValue = null)
     var onboardingStep by rememberSaveable { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
 
@@ -191,7 +222,7 @@ private fun MainShell() {
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
             if (!hideBottomBar) {
-                NavigationBar(containerColor = Color.White) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     Tab.entries.forEach { tab ->
                         val selected = destination?.hierarchy?.any { it.route == tab.route } == true ||
                             (tab == Tab.Projects && (destination?.route == ROUTE_CREATE || onProjectFlow)) ||
@@ -217,6 +248,10 @@ private fun MainShell() {
     ) { inner ->
         val goProfile = { nav.navigateTab(Tab.Profile.route) }
         val iamState by iamViewModel.uiState.collectAsStateWithLifecycle()
+        val analyticsState by analyticsViewModel.uiState.collectAsStateWithLifecycle()
+        val riskCountByProject = analyticsState.projectsWithHighRisks.associate {
+            it.projectId to it.activeHighRiskCount
+        }
         val displayName = iamState.user?.name
         val openProject: (Long) -> Unit = { projectId ->
             nav.navigate(projectDetailsRoute(projectId)) {
@@ -239,7 +274,16 @@ private fun MainShell() {
             composable(Tab.Projects.route) {
                 ProjectListScreen(
                     viewModel = ptoViewModel,
+                    riskCountByProject = riskCountByProject,
                     onProjectClick = openProject,
+                    onCreateProject = {
+                        nav.navigate(ROUTE_CREATE) { launchSingleTop = true }
+                    },
+                    onOpenProjectRisks = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) { launchSingleTop = true }
+                        nav.navigateToGroRisks(projectId)
+                    },
+                    onOpenAnalytics = { nav.navigateTab(Tab.Analytics.route) },
                 )
             }
             composable(
@@ -279,13 +323,16 @@ private fun MainShell() {
                         }
                         nav.navigateToGroRisks(projectId)
                     },
+                    onOpenGovernanceForProject = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) { launchSingleTop = true }
+                        nav.navigateToGroRisks(projectId)
+                    },
                     animationNonce = analyticsVisitNonce,
                 )
             }
             composable(Tab.Governance.route) {
                 GovernanceHubScreen(
-                    ptoViewModel = ptoViewModel,
-                    analyticsViewModel = analyticsViewModel,
+                    viewModel = governanceHubViewModel,
                     onOpenProjectRisks = { projectId ->
                         nav.navigate(projectDetailsRoute(projectId)) { launchSingleTop = true }
                         nav.navigateToGroRisks(projectId)
@@ -298,9 +345,31 @@ private fun MainShell() {
                 )
             }
             composable(Tab.Profile.route) {
-                ProfileScreen(viewModel = iamViewModel)
+                val endSession: () -> Unit = {
+                    scope.launch {
+                        authRepository.clearSession()
+                        iamViewModel.endActiveSession()
+                        onLogout()
+                    }
+                }
+                ProfileScreen(
+                    viewModel = profileViewModel,
+                    onLogout = endSession,
+                    onOpenAuditTrail = { nav.navigateTab(Tab.Governance.route) },
+                )
             }
-            composable(ROUTE_CREATE) { CreateProjectScreen(onClose = { nav.popBackStack() }) }
+            composable(ROUTE_CREATE) {
+                CreateInitiativeScreen(
+                    viewModel = ptoViewModel,
+                    onClose = { nav.popBackStack() },
+                    onCreated = { projectId ->
+                        nav.popBackStack()
+                        if (projectId != null) {
+                            openProject(projectId)
+                        }
+                    },
+                )
+            }
             composable(
                 route = ROUTE_GRO_RISKS,
                 arguments = listOf(
@@ -344,7 +413,7 @@ private fun MainShell() {
         }
     }
 
-        if (!onboardingCompleted) {
+        if (onboardingCompleted == false) {
             OnboardingDialog(
                 step = onboardingStep,
                 onNext = { onboardingStep++ },

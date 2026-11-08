@@ -6,8 +6,8 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,25 +19,42 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Summarize
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,74 +62,85 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mdeps_application.R
-import com.example.mdeps_application.iam.application.IamViewModel
+import com.example.mdeps_application.iam.application.ProfileViewModel
 import kotlinx.coroutines.launch
+import com.example.mdeps_application.iam.data.ProfileDigestFrequency
+import com.example.mdeps_application.iam.data.ProfileMethodology
+import com.example.mdeps_application.ui.Caption
+import com.example.mdeps_application.ui.LocalAppSnackbarHostState
+import com.example.mdeps_application.ui.Pill
+import com.example.mdeps_application.ui.Vx
+import com.example.mdeps_application.ui.VxCard
+import com.example.mdeps_application.ui.VxTopBar
+
+private val ProfileHeroGradient = Brush.verticalGradient(
+    listOf(Color(0xFF0B57D0), Color(0xFF063B8E)),
+)
 
 @Composable
 fun ProfileScreen(
-    viewModel: IamViewModel,
+    viewModel: ProfileViewModel,
+    onLogout: () -> Unit,
+    onOpenAuditTrail: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val user = uiState.user
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val user = state.user
+    val context = LocalContext.current
+    val snackbar = LocalAppSnackbarHostState.current
+    val scope = rememberCoroutineScope()
     var showSecuritySheet by rememberSaveable { mutableStateOf(false) }
 
-    val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
     val avatarUri = user?.avatarUrl?.let(Uri::parse)
-
-    val avatarDescription = stringResource(R.string.iam_a11y_profile_avatar)
-    val changeAvatarDescription = stringResource(R.string.iam_a11y_change_avatar_button)
-    val securitySettingsDescription = stringResource(R.string.iam_a11y_security_settings_button)
-    val avatarUpdatedMessage = stringResource(R.string.iam_profile_avatar_updated)
-
-    val pickVisualMediaLauncher = rememberLauncherForActivityResult(
+    val pickAvatar = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
         if (uri != null) {
             viewModel.saveProfileAvatar(context.contentResolver, uri)
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(avatarUpdatedMessage)
-            }
         }
     }
 
-    val launchGalleryPicker = {
-        pickVisualMediaLauncher.launch(
-            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-        )
-    }
-
     Scaffold(
+        containerColor = Vx.Bg,
         topBar = {
-            TopAppBar(
+            VxTopBar(
                 title = {
-                    Text(
-                        text = stringResource(R.string.iam_profile_title),
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Column {
+                        Caption(text = stringResource(R.string.iam_login_title), color = Vx.Blue)
+                        Text(
+                            text = stringResource(R.string.iam_profile_title),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = Vx.Ink,
+                        )
+                    }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
+                actions = {
+                    if (state.sessionActive) {
+                        Pill(
+                            text = stringResource(R.string.gro_governance_active),
+                            bg = Vx.GreenSoft,
+                            fg = Vx.Green,
+                            modifier = Modifier.padding(end = 16.dp),
+                        )
+                    }
+                },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -120,170 +148,470 @@ fun ProfileScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Card(
+            ProfileHeroCard(
+                name = user?.name.orEmpty(),
+                role = user?.role.orEmpty(),
+                organization = state.operational.workspace.organization,
+                location = state.operational.workspace.location,
+                floor = state.operational.workspace.floorLabel,
+                avatarUri = avatarUri,
+                onChangeAvatar = {
+                    pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+            )
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ProfileKpiCard(
+                    label = stringResource(R.string.iam_profile_kpi_projects),
+                    value = state.metrics.projectCount.toString(),
+                    subtitle = stringResource(R.string.iam_profile_kpi_on_track, state.metrics.projectsOnTrack),
+                    icon = { Icon(Icons.Default.Summarize, contentDescription = null, tint = Vx.Muted, modifier = Modifier.size(18.dp)) },
+                    modifier = Modifier.weight(1f),
+                )
+                ProfileKpiCard(
+                    label = stringResource(R.string.iam_profile_kpi_sla),
+                    value = stringResource(R.string.iam_profile_kpi_sla_value, state.metrics.slaAdherencePercent),
+                    subtitle = stringResource(R.string.iam_profile_kpi_sla_delta, state.metrics.slaDeltaPercent),
+                    icon = { Icon(Icons.Default.Shield, contentDescription = null, tint = Vx.Muted, modifier = Modifier.size(18.dp)) },
+                    modifier = Modifier.weight(1f),
+                )
+                ProfileKpiCard(
+                    label = stringResource(R.string.iam_profile_kpi_team),
+                    value = state.metrics.teamMemberCount.toString(),
+                    subtitle = stringResource(R.string.iam_profile_kpi_pods, state.metrics.podCount),
+                    icon = { Icon(Icons.Default.Groups, contentDescription = null, tint = Vx.Muted, modifier = Modifier.size(18.dp)) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            AccountSecuritySection(
+                email = state.draftEmail.ifBlank { user?.email.orEmpty() },
+                passwordDaysAgo = state.passwordDaysAgo,
+                onEdit = { showSecuritySheet = true },
+                onPassphraseClick = { showSecuritySheet = true },
+            )
+
+            PmoPreferencesSection(
+                timezoneKey = state.operational.timezoneKey,
+                methodology = state.operational.methodology,
+                digest = state.operational.digest,
+                darkStudio = state.operational.darkStudioTheme,
+                onTimezone = viewModel::setTimezone,
+                onMethodology = viewModel::setMethodology,
+                onDigest = viewModel::setDigest,
+                onDarkStudio = viewModel::setDarkStudio,
+            )
+
+            ProfileLanguagePreferenceSection()
+
+            AccessGovernanceCard(
+                tenantId = viewModel.vantageTenantId(),
+                auditRecords = state.auditRecordCount,
+                onOpenAudit = onOpenAuditTrail,
+            )
+
+            Button(
+                onClick = {
+                    viewModel.saveProfile()
+                    scope.launch {
+                        snackbar?.showSnackbar(context.getString(R.string.iam_profile_saved))
+                    }
+                },
+                enabled = !state.isSaving,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                colors = ButtonDefaults.buttonColors(containerColor = Vx.Blue),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(112.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                            .semantics { contentDescription = avatarDescription },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (avatarUri != null) {
-                            AsyncImage(
-                                model = avatarUri,
-                                contentDescription = avatarDescription,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop,
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = avatarDescription,
-                                modifier = Modifier.size(56.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(MaterialTheme.colorScheme.tertiaryContainer)
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                    ) {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = stringResource(R.string.iam_profile_verified_badge),
-                            tint = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Spacer(modifier = Modifier.size(4.dp))
-                        Text(
-                            text = stringResource(R.string.iam_profile_verified_badge),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.tertiary,
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
+                if (state.isSaving) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Color.White)
+                } else {
+                    Icon(Icons.Default.Check, contentDescription = null)
                     Text(
-                        text = user?.name.orEmpty(),
-                        style = MaterialTheme.typography.headlineSmall,
+                        stringResource(R.string.iam_profile_save),
+                        modifier = Modifier.padding(start = 8.dp),
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        text = user?.role.orEmpty(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                ProfileMetricCard(
-                    label = stringResource(R.string.iam_profile_metric_projects),
-                    accessibilityLabel = stringResource(R.string.iam_a11y_profile_metric_projects),
-                    modifier = Modifier.weight(1f),
-                )
-                ProfileMetricCard(
-                    label = stringResource(R.string.iam_profile_metric_sla),
-                    accessibilityLabel = stringResource(R.string.iam_a11y_profile_metric_sla),
-                    modifier = Modifier.weight(1f),
-                )
-                ProfileMetricCard(
-                    label = stringResource(R.string.iam_profile_metric_team),
-                    accessibilityLabel = stringResource(R.string.iam_a11y_profile_metric_team),
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
             OutlinedButton(
-                onClick = launchGalleryPicker,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .semantics { contentDescription = changeAvatarDescription },
-                shape = RoundedCornerShape(12.dp),
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth(),
             ) {
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Vx.Red)
                 Text(
-                    text = stringResource(R.string.iam_profile_change_avatar),
+                    stringResource(R.string.iam_profile_logout),
+                    modifier = Modifier.padding(start = 8.dp),
+                    color = Vx.Red,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = { showSecuritySheet = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .semantics { contentDescription = securitySettingsDescription },
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.iam_profile_security_settings),
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            ProfileLanguagePreferenceSection()
+            Spacer(Modifier.height(8.dp))
         }
     }
 
     if (showSecuritySheet) {
         SecuritySheet(
-            corporateEmail = user?.email.orEmpty(),
+            corporateEmail = state.draftEmail.ifBlank { user?.email.orEmpty() },
             onDismiss = { showSecuritySheet = false },
-            onEmailChange = {},
+            onEmailChange = viewModel::setDraftEmail,
         )
     }
 }
 
 @Composable
-private fun ProfileMetricCard(
-    label: String,
-    accessibilityLabel: String,
-    modifier: Modifier = Modifier,
+private fun ProfileHeroCard(
+    name: String,
+    role: String,
+    organization: String,
+    location: String,
+    floor: String,
+    avatarUri: Uri?,
+    onChangeAvatar: () -> Unit,
 ) {
-    Card(
-        modifier = modifier.semantics { contentDescription = accessibilityLabel },
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    VxCard(Modifier.fillMaxWidth()) {
+        Column {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(96.dp)
+                    .background(ProfileHeroGradient),
+            )
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(112.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = 0.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Vx.BlueSoft),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (avatarUri != null) {
+                        AsyncImage(
+                            model = avatarUri,
+                            contentDescription = stringResource(R.string.iam_a11y_profile_avatar),
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Vx.Blue, modifier = Modifier.size(48.dp))
+                    }
+                    IconButton(
+                        onClick = onChangeAvatar,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(4.dp)
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Vx.Blue),
+                    ) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = stringResource(R.string.iam_profile_change_avatar), tint = Color.White, modifier = Modifier.size(18.dp))
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.align(Alignment.CenterHorizontally)) {
+                    Pill(
+                        text = stringResource(R.string.iam_profile_verified_badge).uppercase(),
+                        bg = Vx.GreenSoft,
+                        fg = Vx.Green,
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(name, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+                Text(role, color = Vx.Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.CenterHorizontally))
+                Spacer(Modifier.height(12.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    MetaChip(Icons.Default.Business, organization, Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    MetaChip(Icons.Default.LocationOn, location, Modifier.weight(1f))
+                    MetaChip(Icons.Default.Layers, floor, Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetaChip(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, modifier: Modifier = Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, contentDescription = null, tint = Vx.Muted, modifier = Modifier.size(16.dp))
         Text(
-            text = label,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 14.dp),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            lineHeight = 18.sp,
+            text,
+            modifier = Modifier.padding(start = 6.dp),
+            fontSize = 11.sp,
+            color = Vx.Muted,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
 
+@Composable
+private fun ProfileKpiCard(
+    label: String,
+    value: String,
+    subtitle: String,
+    icon: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    VxCard(modifier) {
+        Column(Modifier.padding(12.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Caption(text = label)
+                icon()
+            }
+            Text(value, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.padding(top = 6.dp))
+            Text(subtitle, fontSize = 11.sp, color = Vx.Green, modifier = Modifier.padding(top = 2.dp))
+        }
+    }
+}
+
+@Composable
+private fun AccountSecuritySection(
+    email: String,
+    passwordDaysAgo: Int,
+    onEdit: () -> Unit,
+    onPassphraseClick: () -> Unit,
+) {
+    VxCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.iam_profile_account_security), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                TextButton(onClick = onEdit) {
+                    Text(stringResource(R.string.iam_profile_edit), color = Vx.Blue, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            SecurityRow(
+                icon = Icons.Default.Email,
+                title = stringResource(R.string.iam_profile_corp_email),
+                subtitle = email,
+                trailing = { Icon(Icons.Default.Lock, contentDescription = null, tint = Vx.Muted, modifier = Modifier.size(16.dp)) },
+            )
+            HorizontalDivider(color = Vx.Line)
+            SecurityRow(
+                icon = Icons.Default.VerifiedUser,
+                title = stringResource(R.string.iam_profile_sso_title),
+                subtitle = stringResource(R.string.iam_profile_sso_sub),
+                trailing = {
+                    Pill(text = stringResource(R.string.iam_profile_status_active), bg = Vx.BlueSoft, fg = Vx.Blue)
+                },
+            )
+            HorizontalDivider(color = Vx.Line)
+            SecurityRow(
+                icon = Icons.Default.Shield,
+                title = stringResource(R.string.iam_profile_2fa_title),
+                subtitle = stringResource(R.string.iam_profile_2fa_sub),
+                trailing = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Vx.Green, modifier = Modifier.size(16.dp))
+                        Text(
+                            stringResource(R.string.iam_profile_status_enforced),
+                            color = Vx.Green,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
+                    }
+                },
+            )
+            HorizontalDivider(color = Vx.Line)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onPassphraseClick)
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Default.Lock, contentDescription = null, tint = Vx.Blue, modifier = Modifier.size(22.dp))
+                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                    Text(stringResource(R.string.iam_profile_passphrase_title), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text(
+                        stringResource(R.string.iam_profile_passphrase_sub, passwordDaysAgo),
+                        fontSize = 12.sp,
+                        color = Vx.Muted,
+                    )
+                }
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Vx.Muted)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecurityRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    trailing: @Composable () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = Vx.Blue, modifier = Modifier.size(22.dp))
+        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text(subtitle, fontSize = 12.sp, color = Vx.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+        trailing()
+    }
+}
+
+@Composable
+private fun PmoPreferencesSection(
+    timezoneKey: String,
+    methodology: ProfileMethodology,
+    digest: ProfileDigestFrequency,
+    darkStudio: Boolean,
+    onTimezone: (String) -> Unit,
+    onMethodology: (ProfileMethodology) -> Unit,
+    onDigest: (ProfileDigestFrequency) -> Unit,
+    onDarkStudio: (Boolean) -> Unit,
+) {
+    val timezoneOptions = listOf(
+        "utc_plus_1" to stringResource(R.string.iam_profile_tz_madrid),
+        "utc_0" to stringResource(R.string.iam_profile_tz_london),
+        "utc_minus_5" to stringResource(R.string.iam_profile_tz_new_york),
+    )
+
+    VxCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.iam_profile_pmo_prefs), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Vx.Ink)
+
+            Caption(text = stringResource(R.string.iam_profile_timezone_label))
+            timezoneOptions.forEach { (key, label) ->
+                val selected = key == timezoneKey
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (selected) Vx.BlueSoft else Vx.Chip)
+                        .clickable { onTimezone(key) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (selected) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = Vx.Blue, modifier = Modifier.size(18.dp))
+                    }
+                    Text(
+                        label,
+                        modifier = Modifier.padding(start = if (selected) 8.dp else 0.dp),
+                        fontSize = 12.sp,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = Vx.Ink,
+                    )
+                }
+            }
+
+            Caption(text = stringResource(R.string.iam_profile_methodology_label))
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                SegmentedButton(
+                    selected = methodology == ProfileMethodology.HYBRID,
+                    onClick = { onMethodology(ProfileMethodology.HYBRID) },
+                    shape = SegmentedButtonDefaults.itemShape(0, 2),
+                ) {
+                    Text(stringResource(R.string.iam_profile_methodology_hybrid), fontSize = 11.sp)
+                }
+                SegmentedButton(
+                    selected = methodology == ProfileMethodology.WATERFALL,
+                    onClick = { onMethodology(ProfileMethodology.WATERFALL) },
+                    shape = SegmentedButtonDefaults.itemShape(1, 2),
+                ) {
+                    Text(stringResource(R.string.iam_profile_methodology_waterfall), fontSize = 11.sp)
+                }
+            }
+
+            Caption(text = stringResource(R.string.iam_profile_digest_label))
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                SegmentedButton(
+                    selected = digest == ProfileDigestFrequency.DAILY,
+                    onClick = { onDigest(ProfileDigestFrequency.DAILY) },
+                    shape = SegmentedButtonDefaults.itemShape(0, 2),
+                ) {
+                    Text(stringResource(R.string.iam_profile_digest_daily), fontSize = 11.sp)
+                }
+                SegmentedButton(
+                    selected = digest == ProfileDigestFrequency.WEEKLY,
+                    onClick = { onDigest(ProfileDigestFrequency.WEEKLY) },
+                    shape = SegmentedButtonDefaults.itemShape(1, 2),
+                ) {
+                    Text(stringResource(R.string.iam_profile_digest_weekly), fontSize = 11.sp)
+                }
+            }
+
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.DarkMode, contentDescription = null, tint = Vx.Blue)
+                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                    Text(stringResource(R.string.iam_profile_dark_studio), fontWeight = FontWeight.SemiBold, color = Vx.Ink)
+                    Text(stringResource(R.string.iam_profile_dark_studio_sub), fontSize = 12.sp, color = Vx.Muted)
+                }
+                Switch(
+                    checked = darkStudio,
+                    onCheckedChange = onDarkStudio,
+                    colors = SwitchDefaults.colors(checkedTrackColor = Vx.Blue),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccessGovernanceCard(
+    tenantId: String,
+    auditRecords: Int,
+    onOpenAudit: () -> Unit,
+) {
+    VxCard(Modifier.fillMaxWidth(), containerColor = Vx.BlueSoft) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Badge, contentDescription = null, tint = Vx.Blue)
+                Text(
+                    stringResource(R.string.iam_profile_access_title),
+                    modifier = Modifier.padding(start = 8.dp),
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.weight(1f))
+                Pill(text = stringResource(R.string.iam_profile_tier_badge), bg = Vx.Surface, fg = Vx.Blue)
+            }
+            Text(
+                stringResource(R.string.iam_profile_master_role),
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 10.dp),
+            )
+            Text(stringResource(R.string.iam_profile_master_role_desc), fontSize = 12.sp, color = Vx.Muted)
+            Text(
+                stringResource(R.string.iam_profile_suite_version),
+                fontSize = 11.sp,
+                color = Vx.Muted,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(tenantId, fontWeight = FontWeight.Bold, color = Vx.Blue, fontSize = 13.sp)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Vx.Surface)
+                    .clickable(onClick = onOpenAudit)
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.iam_profile_audit_link), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                }
+                Text(
+                    stringResource(R.string.iam_profile_audit_records, auditRecords),
+                    color = Vx.Muted,
+                    fontSize = 12.sp,
+                )
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Vx.Muted)
+            }
+        }
+    }
+}
