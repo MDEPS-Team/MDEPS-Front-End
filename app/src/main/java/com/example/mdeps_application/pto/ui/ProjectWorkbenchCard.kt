@@ -55,7 +55,7 @@ fun ProjectWorkbenchCard(
             .fillMaxWidth()
             .semantics { contentDescription = cardContentDescription },
         onClick = onClick,
-        containerColor = if (atRisk) Vx.RedSoft else Color.White,
+        containerColor = if (atRisk) Vx.RedSoft else Vx.Surface,
     ) {
         Column(Modifier.padding(if (compact) 12.dp else 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

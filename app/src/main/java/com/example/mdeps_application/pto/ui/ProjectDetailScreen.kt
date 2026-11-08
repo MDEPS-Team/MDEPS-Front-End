@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ViewColumn
+import androidx.compose.material.icons.outlined.ViewTimeline
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
@@ -87,6 +89,8 @@ fun ProjectDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToRisks: (Long) -> Unit,
     onNavigateToMilestones: (Long) -> Unit,
+    onOpenKanban: (Long) -> Unit,
+    onOpenRoadmap: (Long) -> Unit,
 ) {
     CollectGroUiEvents(viewModel = groViewModel)
     val detailState by viewModel.projectDetailState.collectAsStateWithLifecycle()
@@ -117,6 +121,8 @@ fun ProjectDetailScreen(
         onNavigateBack = onNavigateBack,
         onNavigateToRisks = { onNavigateToRisks(project.id) },
         onNavigateToMilestones = { onNavigateToMilestones(project.id) },
+        onOpenKanban = { onOpenKanban(project.id) },
+        onOpenRoadmap = { onOpenRoadmap(project.id) },
         onAddTaskClick = { taskTitle ->
             viewModel.addTask(
                 projectId = project.id,
@@ -148,6 +154,8 @@ private fun ProjectDetailContent(
     onNavigateBack: () -> Unit,
     onNavigateToRisks: () -> Unit,
     onNavigateToMilestones: () -> Unit,
+    onOpenKanban: () -> Unit,
+    onOpenRoadmap: () -> Unit,
     onAddTaskClick: (String) -> Unit,
     onQuickAddRisk: (String, String) -> Unit,
     onQuickAddMilestone: (String) -> Unit,
@@ -237,6 +245,18 @@ private fun ProjectDetailContent(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onOpenKanban) {
+                            Icon(
+                                imageVector = Icons.Outlined.ViewColumn,
+                                contentDescription = stringResource(R.string.kb_title),
+                            )
+                        }
+                        IconButton(onClick = onOpenRoadmap) {
+                            Icon(
+                                imageVector = Icons.Outlined.ViewTimeline,
+                                contentDescription = stringResource(R.string.rm_title),
+                            )
+                        }
                         IconButton(
                             onClick = {
                                 coroutineScope.launch {

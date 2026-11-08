@@ -50,6 +50,8 @@ import com.example.mdeps_application.ui.Caption
 import com.example.mdeps_application.ui.Vx
 import com.example.mdeps_application.ui.VxCard
 import com.example.mdeps_application.ui.VxTopBar
+import androidx.compose.material.icons.outlined.ViewColumn
+import androidx.compose.material3.IconButton
 
 private enum class ProjectHubFilter {
     ALL,
@@ -66,6 +68,7 @@ fun ProjectListScreen(
     onCreateProject: () -> Unit,
     onOpenProjectRisks: (Long) -> Unit,
     onOpenAnalytics: () -> Unit,
+    onOpenKanban: () -> Unit,
 ) {
     val dashboard by viewModel.portfolioDashboard.collectAsStateWithLifecycle()
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -117,6 +120,15 @@ fun ProjectListScreen(
                             text = stringResource(R.string.pto_hub_subtitle, activeCount),
                             fontSize = 12.sp,
                             color = Vx.Muted,
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onOpenKanban) {
+                        Icon(
+                            imageVector = Icons.Outlined.ViewColumn,
+                            contentDescription = stringResource(R.string.kb_title),
+                            tint = Vx.Ink,
                         )
                     }
                 },
