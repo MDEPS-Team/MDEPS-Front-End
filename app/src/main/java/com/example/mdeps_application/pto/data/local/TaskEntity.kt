@@ -24,4 +24,11 @@ data class TaskEntity(
     val title: String,
     val is_completed: Boolean,
     val evidence_photo_uri: String?,
+    // Columnas añadidas en la versión 2 (tablero Kanban). Ver PtoDatabase.MIGRATION_1_2.
+    val status: String = "TODO",
+    val priority: String = "P2",
+    val due_date: Long? = null,
+    val assignee: String? = null,
+    val story_points: Int = 3,
+    val description: String? = null,
 )
