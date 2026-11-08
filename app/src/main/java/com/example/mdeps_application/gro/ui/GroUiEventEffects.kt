@@ -1,5 +1,6 @@
 package com.example.mdeps_application.gro.ui
 
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +32,8 @@ fun CollectGroUiEvents(viewModel: GroViewModel) {
                     val result = snackbarHostState.showSnackbar(
                         message = message,
                         actionLabel = if (event.canUndo) undoLabel else null,
+                        // Con acción, Material usa Indefinite por defecto y el aviso tapaba la UI.
+                        duration = SnackbarDuration.Long,
                     )
                     if (event.canUndo && result == SnackbarResult.ActionPerformed) {
                         viewModel.undoLastAction()
