@@ -5,6 +5,8 @@ import androidx.compose.ui.res.stringResource
 import com.example.mdeps_application.R
 import com.example.mdeps_application.pto.domain.Project
 import com.example.mdeps_application.pto.domain.ProjectStatus
+import com.example.mdeps_application.pto.domain.Task
+import com.example.mdeps_application.pto.domain.stripInitiativeMetadata
 
 private const val LEGACY_DEMO_PROJECT_PREFIX = "Demo Project "
 private const val LEGACY_DEMO_DESCRIPTION = "Auto-generated project for offline Room testing."
@@ -19,12 +21,20 @@ fun Project.localizedDisplayName(): String {
 }
 
 @Composable
-fun Project.localizedDisplayDescription(): String =
+fun Project.localizedDisplayDescription(): String {
     if (description == LEGACY_DEMO_DESCRIPTION) {
-        stringResource(R.string.pto_demo_project_description)
-    } else {
-        description
+        return stringResource(R.string.pto_demo_project_description)
     }
+    val brief = stripInitiativeMetadata(description)
+    return brief.ifBlank { stringResource(R.string.pto_description_empty) }
+}
+
+@Composable
+fun Task.localizedTitle(): String = when (title) {
+    "provision:kickoff" -> stringResource(R.string.pto_provision_task_kickoff)
+    "provision:raci" -> stringResource(R.string.pto_provision_task_raci)
+    else -> title
+}
 
 @Composable
 fun ProjectStatus.localizedLabel(): String =

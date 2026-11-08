@@ -9,12 +9,28 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.example.mdeps_application.ui.LocalVxPalette
+import com.example.mdeps_application.ui.VxPaletteDark
+import com.example.mdeps_application.ui.VxPaletteLight
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Color(0xFF6BA3FF),
+    onPrimary = Color(0xFF0A1628),
+    primaryContainer = Color(0xFF1A3055),
+    onPrimaryContainer = Color(0xFFD8E6FF),
+    secondary = Color(0xFF9DA8BC),
+    tertiary = Color(0xFF5CD9A8),
+    background = Color(0xFF0E1118),
+    surface = Color(0xFF171C26),
+    surfaceContainerLow = Color(0xFF12151C),
+    onSurface = Color(0xFFE8ECF4),
+    onSurfaceVariant = Color(0xFF9DA8BC),
+    outline = Color(0xFF4A5364),
+    outlineVariant = Color(0xFF2E3646),
+    error = Color(0xFFFFB4AB),
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -60,9 +76,12 @@ fun MDEPS_APPLICATIONTheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val vxPalette = if (darkTheme) VxPaletteDark else VxPaletteLight
+    CompositionLocalProvider(LocalVxPalette provides vxPalette) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content,
+        )
+    }
 }

@@ -21,6 +21,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -44,15 +47,29 @@ fun MilestoneTimelineScreen(
     CollectGroUiEvents(viewModel = viewModel)
     val milestones by viewModel.milestonesState.collectAsStateWithLifecycle()
     val navigateBackDescription = stringResource(R.string.gro_a11y_navigate_back)
-    val seedDemoDescription = stringResource(R.string.gro_a11y_seed_demo_data)
+    val addMilestoneDescription = stringResource(R.string.gro_a11y_add_milestone)
+    var showAddDialog by remember { mutableStateOf(false) }
+    val weekMillis = 86_400_000L * 7L
+
+    AddMilestoneDialog(
+        visible = showAddDialog,
+        onDismiss = { showAddDialog = false },
+        onConfirm = { title ->
+            viewModel.addCustomMilestone(
+                projectId = projectId,
+                title = title,
+                targetDate = System.currentTimeMillis() + weekMillis,
+            )
+        },
+    )
 
     MilestoneTimelineContent(
         milestones = milestones,
         onMilestoneToggled = viewModel::toggleMilestone,
         onNavigateBack = onNavigateBack,
-        onSeedDemoData = { viewModel.addCorporateDummyData(projectId) },
+        onAddMilestone = { showAddDialog = true },
         navigateBackDescription = navigateBackDescription,
-        seedDemoDescription = seedDemoDescription,
+        addMilestoneDescription = addMilestoneDescription,
         modifier = modifier,
     )
 }
@@ -62,9 +79,9 @@ internal fun MilestoneTimelineContent(
     milestones: List<Milestone>,
     onMilestoneToggled: (Milestone) -> Unit,
     onNavigateBack: () -> Unit,
-    onSeedDemoData: () -> Unit,
+    onAddMilestone: () -> Unit,
     navigateBackDescription: String,
-    seedDemoDescription: String,
+    addMilestoneDescription: String,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -88,27 +105,16 @@ internal fun MilestoneTimelineContent(
                         )
                     }
                 },
-                actions = {
-                    IconButton(
-                        onClick = onSeedDemoData,
-                        modifier = Modifier.semantics { contentDescription = seedDemoDescription },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = seedDemoDescription,
-                        )
-                    }
-                },
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onSeedDemoData,
-                modifier = Modifier.semantics { contentDescription = seedDemoDescription },
+                onClick = onAddMilestone,
+                modifier = Modifier.semantics { contentDescription = addMilestoneDescription },
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = seedDemoDescription,
+                    contentDescription = addMilestoneDescription,
                 )
             }
         },
@@ -162,9 +168,9 @@ private fun MilestoneTimelineScreenPreview() {
             ),
             onMilestoneToggled = {},
             onNavigateBack = {},
-            onSeedDemoData = {},
+            onAddMilestone = {},
             navigateBackDescription = "Back",
-            seedDemoDescription = "Seed",
+            addMilestoneDescription = "Add",
         )
     }
 }

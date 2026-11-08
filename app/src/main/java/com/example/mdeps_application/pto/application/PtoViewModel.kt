@@ -3,8 +3,13 @@ package com.example.mdeps_application.pto.application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.mdeps_application.gro.domain.Milestone
 import com.example.mdeps_application.gro.domain.MilestoneRepository
+import com.example.mdeps_application.gro.domain.Risk
 import com.example.mdeps_application.gro.domain.RiskRepository
+import com.example.mdeps_application.gro.domain.RiskSeverity
+import com.example.mdeps_application.gro.domain.RiskStatus
+import com.example.mdeps_application.gro.domain.GroSeedContentKeys
 import com.example.mdeps_application.pto.domain.Project
 import com.example.mdeps_application.pto.domain.ProjectRepository
 import com.example.mdeps_application.pto.domain.ProjectStatus
@@ -154,16 +159,84 @@ class PtoViewModel(
         name: String,
         description: String,
         status: ProjectStatus = ProjectStatus.PLANNING,
+        gateDateMillis: Long? = null,
+        seedHighSeverityRisk: Boolean = false,
+        onCreated: (Long) -> Unit = {},
     ) {
         val trimmedName = name.trim()
         if (trimmedName.isEmpty()) return
         viewModelScope.launch {
-            projectRepository.insertProject(
+            val projectId = projectRepository.insertProject(
                 Project(
                     id = 0L,
                     name = trimmedName,
                     description = description.trim(),
                     status = status,
+                ),
+            )
+            provisionInitiativeArtifacts(
+                projectId = projectId,
+                gateDateMillis = gateDateMillis,
+                seedHighSeverityRisk = seedHighSeverityRisk || status == ProjectStatus.AT_RISK,
+            )
+            markPortfolioRefreshed()
+            onCreated(projectId)
+        }
+    }
+
+    private suspend fun provisionInitiativeArtifacts(
+        projectId: Long,
+        gateDateMillis: Long?,
+        seedHighSeverityRisk: Boolean,
+    ) {
+        val dayMillis = 86_400_000L
+        val now = System.currentTimeMillis()
+        val gate = gateDateMillis ?: (now + 105L * dayMillis)
+        milestoneRepository.insertMilestone(
+            Milestone(
+                id = 0L,
+                projectId = projectId,
+                title = GroSeedContentKeys.MILESTONE_ARCH_REVIEW,
+                targetDate = now + (21L * dayMillis),
+                isReached = false,
+            ),
+        )
+        milestoneRepository.insertMilestone(
+            Milestone(
+                id = 0L,
+                projectId = projectId,
+                title = GroSeedContentKeys.MILESTONE_STEERING,
+                targetDate = gate,
+                isReached = false,
+            ),
+        )
+        projectRepository.insertTask(
+            Task(
+                id = 0L,
+                projectId = projectId,
+                title = PROVISION_TASK_KICKOFF,
+                isCompleted = false,
+                evidencePhotoUri = null,
+            ),
+        )
+        projectRepository.insertTask(
+            Task(
+                id = 0L,
+                projectId = projectId,
+                title = PROVISION_TASK_RACI,
+                isCompleted = false,
+                evidencePhotoUri = null,
+            ),
+        )
+        if (seedHighSeverityRisk) {
+            riskRepository.insertRisk(
+                Risk(
+                    id = 0L,
+                    projectId = projectId,
+                    title = GroSeedContentKeys.RISK_SERVER_OUTAGE,
+                    description = GroSeedContentKeys.RISK_SERVER_OUTAGE,
+                    severity = RiskSeverity.HIGH,
+                    status = RiskStatus.IDENTIFIED,
                 ),
             )
         }
@@ -205,6 +278,9 @@ class PtoViewModel(
     }
 
     companion object {
+        private const val PROVISION_TASK_KICKOFF = "provision:kickoff"
+        private const val PROVISION_TASK_RACI = "provision:raci"
+
         fun factory(
             projectRepository: ProjectRepository,
             riskRepository: RiskRepository,

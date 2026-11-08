@@ -12,5 +12,7 @@ interface MilestoneRepository {
 
     suspend fun updateMilestone(milestone: Milestone)
 
+    suspend fun deleteMilestoneById(milestoneId: Long)
+
     suspend fun deleteMilestonesForProject(projectId: Long)
 }

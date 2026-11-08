@@ -14,4 +14,8 @@ interface AuthRepository {
     fun observeUserProfile(): Flow<User?>
 
     suspend fun saveProfileAvatarUri(uri: String)
+
+    suspend fun updateUserEmail(email: String)
+
+    suspend fun clearSession()
 }

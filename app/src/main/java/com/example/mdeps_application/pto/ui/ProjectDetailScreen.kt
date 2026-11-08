@@ -453,7 +453,7 @@ fun TaskItem(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = task.title,
+                    text = task.localizedTitle(),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
