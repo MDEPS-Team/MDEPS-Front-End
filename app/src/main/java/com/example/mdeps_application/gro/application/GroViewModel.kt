@@ -3,6 +3,7 @@ package com.example.mdeps_application.gro.application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.mdeps_application.gro.domain.GroSeedContentKeys
 import com.example.mdeps_application.gro.domain.Milestone
 import com.example.mdeps_application.gro.domain.MilestoneRepository
 import com.example.mdeps_application.gro.domain.Risk
@@ -136,8 +137,8 @@ class GroViewModel(
                 Risk(
                     id = 0L,
                     projectId = projectId,
-                    title = "Server Outage",
-                    description = "Primary data center failover capacity is below SLA during peak load.",
+                    title = GroSeedContentKeys.RISK_SERVER_OUTAGE,
+                    description = GroSeedContentKeys.RISK_SERVER_OUTAGE,
                     severity = RiskSeverity.CRITICAL,
                     status = RiskStatus.IDENTIFIED,
                 ),
@@ -148,7 +149,7 @@ class GroViewModel(
                 Milestone(
                     id = 0L,
                     projectId = projectId,
-                    title = "Architecture review gate",
+                    title = GroSeedContentKeys.MILESTONE_ARCH_REVIEW,
                     targetDate = now + (14L * dayMillis),
                     isReached = false,
                 ),
@@ -157,7 +158,7 @@ class GroViewModel(
                 Milestone(
                     id = 0L,
                     projectId = projectId,
-                    title = "Executive steering committee",
+                    title = GroSeedContentKeys.MILESTONE_STEERING,
                     targetDate = now + (30L * dayMillis),
                     isReached = false,
                 ),

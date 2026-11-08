@@ -46,16 +46,17 @@ fun MilestoneTimelineItem(
     val formattedDate = formatGroTargetDate(milestone.targetDate)
     val toggleActionDescription = stringResource(R.string.gro_a11y_toggle_milestone)
     val checkIconDescription = stringResource(R.string.gro_a11y_milestone_check_icon)
+    val displayTitle = milestone.localizedTitle()
     val rowContentDescription = if (milestone.isReached) {
         stringResource(
             R.string.gro_a11y_milestone_reached,
-            milestone.title,
+            displayTitle,
             formattedDate,
         )
     } else {
         stringResource(
             R.string.gro_a11y_milestone_pending,
-            milestone.title,
+            displayTitle,
             formattedDate,
         )
     }
@@ -94,7 +95,7 @@ fun MilestoneTimelineItem(
                 .padding(top = 4.dp, bottom = 12.dp),
         ) {
             Text(
-                text = milestone.title,
+                text = displayTitle,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )

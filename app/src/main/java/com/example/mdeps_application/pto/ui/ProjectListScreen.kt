@@ -17,7 +17,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -96,8 +98,11 @@ fun ProjectListScreen(
         }
     }
 
+    var showCreateSheet by rememberSaveable { mutableStateOf(false) }
+    var projectPendingDelete by remember { mutableStateOf<ProjectWithProgress?>(null) }
     val addProjectDescription = stringResource(R.string.pto_a11y_add_project)
     val openProjectDescription = stringResource(R.string.pto_a11y_project_card)
+    val deleteProjectDescription = stringResource(R.string.pto_a11y_delete_project)
 
     Scaffold(
         containerColor = Vx.Bg,
@@ -126,7 +131,7 @@ fun ProjectListScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { viewModel.addDummyProject() },
+                onClick = { showCreateSheet = true },
                 modifier = Modifier.semantics { contentDescription = addProjectDescription },
                 containerColor = Vx.Blue,
                 contentColor = Vx.Bg,
@@ -221,6 +226,8 @@ fun ProjectListScreen(
                                 item = item,
                                 onClick = { onProjectClick(item.project.id) },
                                 cardContentDescription = openProjectDescription,
+                                onDelete = { projectPendingDelete = item },
+                                deleteContentDescription = deleteProjectDescription,
                             )
                         }
                     }
@@ -231,10 +238,50 @@ fun ProjectListScreen(
                         item = item,
                         onClick = { onProjectClick(item.project.id) },
                         cardContentDescription = openProjectDescription,
+                        onDelete = { projectPendingDelete = item },
+                        deleteContentDescription = deleteProjectDescription,
                     )
                 }
             }
         }
+    }
+
+    ProjectCreateSheet(
+        visible = showCreateSheet,
+        onDismiss = { showCreateSheet = false },
+        onCreate = { name, description, status ->
+            viewModel.createProject(name, description, status)
+        },
+    )
+
+    projectPendingDelete?.let { item ->
+        AlertDialog(
+            onDismissRequest = { projectPendingDelete = null },
+            title = { Text(stringResource(R.string.pto_delete_project_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.pto_delete_project_message,
+                        item.project.localizedDisplayName(),
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteProject(item.project.id)
+                        projectPendingDelete = null
+                    },
+                ) {
+                    Text(stringResource(R.string.pto_delete_project_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { projectPendingDelete = null }) {
+                    Text(stringResource(R.string.pto_delete_project_cancel))
+                }
+            },
+        )
     }
 }
 

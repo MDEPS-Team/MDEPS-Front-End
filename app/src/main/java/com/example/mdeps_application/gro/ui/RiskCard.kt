@@ -58,7 +58,7 @@ fun RiskCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = risk.title,
+                    text = risk.localizedTitle(),
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
@@ -69,7 +69,7 @@ fun RiskCard(
                 )
             }
             Text(
-                text = risk.description,
+                text = risk.localizedDescription(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

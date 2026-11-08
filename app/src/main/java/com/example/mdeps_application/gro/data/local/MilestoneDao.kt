@@ -34,4 +34,7 @@ interface MilestoneDao {
 
     @Query("DELETE FROM milestones WHERE id = :milestoneId")
     suspend fun deleteMilestoneById(milestoneId: Long)
+
+    @Query("DELETE FROM milestones WHERE project_id = :projectId")
+    suspend fun deleteMilestonesByProjectId(projectId: Long)
 }

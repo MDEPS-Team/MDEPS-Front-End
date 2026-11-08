@@ -31,4 +31,7 @@ interface RiskDao {
 
     @Query("DELETE FROM risks WHERE id = :riskId")
     suspend fun deleteRiskById(riskId: Long)
+
+    @Query("DELETE FROM risks WHERE project_id = :projectId")
+    suspend fun deleteRisksByProjectId(projectId: Long)
 }

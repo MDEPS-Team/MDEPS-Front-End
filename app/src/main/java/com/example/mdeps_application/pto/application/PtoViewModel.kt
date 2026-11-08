@@ -3,6 +3,8 @@ package com.example.mdeps_application.pto.application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.mdeps_application.gro.domain.MilestoneRepository
+import com.example.mdeps_application.gro.domain.RiskRepository
 import com.example.mdeps_application.pto.domain.Project
 import com.example.mdeps_application.pto.domain.ProjectRepository
 import com.example.mdeps_application.pto.domain.ProjectStatus
@@ -43,6 +45,8 @@ data class PortfolioDashboard(
 
 class PtoViewModel(
     private val projectRepository: ProjectRepository,
+    private val riskRepository: RiskRepository,
+    private val milestoneRepository: MilestoneRepository,
 ) : ViewModel() {
 
     private val _projects = MutableStateFlow<List<Project>>(emptyList())
@@ -146,17 +150,30 @@ class PtoViewModel(
         _projectDetailState.value = ProjectDetailUiState()
     }
 
-    fun addDummyProject() {
+    fun createProject(
+        name: String,
+        description: String,
+        status: ProjectStatus = ProjectStatus.PLANNING,
+    ) {
+        val trimmedName = name.trim()
+        if (trimmedName.isEmpty()) return
         viewModelScope.launch {
-            val suffix = System.currentTimeMillis() % 1000
             projectRepository.insertProject(
                 Project(
                     id = 0L,
-                    name = "Demo Project $suffix",
-                    description = "Auto-generated project for offline Room testing.",
-                    status = ProjectStatus.IN_PROGRESS,
+                    name = trimmedName,
+                    description = description.trim(),
+                    status = status,
                 ),
             )
+        }
+    }
+
+    fun deleteProject(projectId: Long) {
+        viewModelScope.launch {
+            riskRepository.deleteRisksForProject(projectId)
+            milestoneRepository.deleteMilestonesForProject(projectId)
+            projectRepository.deleteProject(projectId)
         }
     }
 
@@ -188,11 +205,19 @@ class PtoViewModel(
     }
 
     companion object {
-        fun factory(projectRepository: ProjectRepository): ViewModelProvider.Factory =
+        fun factory(
+            projectRepository: ProjectRepository,
+            riskRepository: RiskRepository,
+            milestoneRepository: MilestoneRepository,
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return PtoViewModel(projectRepository) as T
+                    return PtoViewModel(
+                        projectRepository = projectRepository,
+                        riskRepository = riskRepository,
+                        milestoneRepository = milestoneRepository,
+                    ) as T
                 }
             }
     }
