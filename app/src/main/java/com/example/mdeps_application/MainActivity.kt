@@ -62,6 +62,18 @@ import com.example.mdeps_application.iam.data.ProfilePreferencesStore
 import com.example.mdeps_application.iam.data.iamAuthDataStore
 import com.example.mdeps_application.iam.data.profileDataStore
 import com.example.mdeps_application.iam.ui.LoginScreen
+import com.example.mdeps_application.iam.ui.PasswordRecoveryScreen
+import com.example.mdeps_application.iam.ui.RegisterFlowScreen
+import com.example.mdeps_application.iam.ui.SplashScreen
+import com.example.mdeps_application.iam.application.PasswordRecoveryViewModel
+import com.example.mdeps_application.iam.application.RegistrationViewModel
+import com.example.mdeps_application.ui.VxMotion
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import com.example.mdeps_application.iam.ui.ProfileScreen
 import com.example.mdeps_application.pto.application.PtoViewModel
 import com.example.mdeps_application.pto.data.OfflineFirstProjectRepository
@@ -70,6 +82,9 @@ import com.example.mdeps_application.pto.ui.HomeScreen
 import com.example.mdeps_application.pto.ui.ProjectDetailScreen
 import com.example.mdeps_application.pto.ui.CreateInitiativeScreen
 import com.example.mdeps_application.pto.ui.ProjectListScreen
+import com.example.mdeps_application.pto.ui.KanbanScreen
+import com.example.mdeps_application.pto.ui.RoadmapScreen
+import com.example.mdeps_application.pto.application.KanbanViewModel
 import com.example.mdeps_application.app.data.OnboardingStore
 import com.example.mdeps_application.app.data.onboardingDataStore
 import com.example.mdeps_application.app.data.GovernancePreferencesStore
@@ -99,6 +114,11 @@ private const val ROUTE_PROJECT_DETAILS = "project_details/{projectId}"
 private const val ROUTE_GRO_RISKS = "gro_risks/{projectId}"
 private const val ROUTE_GRO_MILESTONES = "gro_milestones/{projectId}"
 private const val ARG_PROJECT_ID = "projectId"
+private const val ROUTE_KANBAN = "kanban?projectId={projectId}"
+private const val ROUTE_ROADMAP = "roadmap/{projectId}"
+private const val NO_PROJECT = -1L
+private fun kanbanRoute(projectId: Long? = null): String = "kanban?projectId=${projectId ?: NO_PROJECT}"
+private fun roadmapRoute(projectId: Long): String = "roadmap/$projectId"
 private fun projectDetailsRoute(projectId: Long): String = "project_details/$projectId"
 private fun groRisksRoute(projectId: Long): String = "gro_risks/$projectId"
 private fun groMilestonesRoute(projectId: Long): String = "gro_milestones/$projectId"
@@ -115,25 +135,98 @@ private enum class Tab(
     Profile("profile", R.string.nav_tab_profile, Icons.Default.Person),
 }
 
+private enum class AuthRoute { Splash, Login, Register, Recovery }
+
 @Composable
 fun VantagePmoApp() {
     // No recordar sesión entre reinicios fríos: obliga pantalla de acceso (email o biometría).
     var sessionUnlocked by remember { mutableStateOf(false) }
+    var authRoute by rememberSaveable { mutableStateOf(AuthRoute.Splash) }
+    // Cambia en cada entrada a un flujo para que su ViewModel arranque limpio.
+    var flowNonce by rememberSaveable { mutableIntStateOf(0) }
     val context = LocalContext.current
     val profilePreferencesStore = remember { ProfilePreferencesStore(context.profileDataStore) }
     val darkStudio by profilePreferencesStore.observeDarkStudioTheme()
         .collectAsStateWithLifecycle(initialValue = false)
+    val versionName = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
+            .getOrNull() ?: "1.0"
+    }
 
     MDEPS_APPLICATIONTheme(darkTheme = darkStudio) {
         if (!sessionUnlocked) {
             val authRepository = remember { DataStoreAuthRepository(context.iamAuthDataStore) }
             val iamViewModel: IamViewModel = viewModel(factory = IamViewModel.factory(authRepository))
-            LoginScreen(
-                viewModel = iamViewModel,
-                onLoginSuccess = { sessionUnlocked = true },
-            )
+            val iamState by iamViewModel.uiState.collectAsStateWithLifecycle()
+            var enteringFromRecovery by remember { mutableStateOf(false) }
+            LaunchedEffect(iamState.isAuthenticated, enteringFromRecovery) {
+                if (enteringFromRecovery && iamState.isAuthenticated) {
+                    enteringFromRecovery = false
+                    sessionUnlocked = true
+                }
+            }
+            AnimatedContent(
+                targetState = authRoute,
+                transitionSpec = {
+                    (
+                        fadeIn(tween(VxMotion.STANDARD_MS, easing = VxMotion.EaseOut)) +
+                            scaleIn(tween(VxMotion.STANDARD_MS, easing = VxMotion.EaseOut), initialScale = 0.98f)
+                        ) togetherWith fadeOut(tween(VxMotion.FAST_MS - 40))
+                },
+                label = "authRoute",
+            ) { route ->
+                when (route) {
+                    AuthRoute.Splash -> SplashScreen(
+                        versionName = versionName,
+                        onFinished = { authRoute = AuthRoute.Login },
+                    )
+                    AuthRoute.Login -> LoginScreen(
+                        viewModel = iamViewModel,
+                        onLoginSuccess = { sessionUnlocked = true },
+                        onCreateAccount = {
+                            flowNonce++
+                            authRoute = AuthRoute.Register
+                        },
+                        onForgotPassword = {
+                            flowNonce++
+                            authRoute = AuthRoute.Recovery
+                        },
+                    )
+                    AuthRoute.Register -> {
+                        val registrationViewModel: RegistrationViewModel = viewModel(
+                            key = "registration_$flowNonce",
+                            factory = RegistrationViewModel.factory(authRepository),
+                        )
+                        RegisterFlowScreen(
+                            viewModel = registrationViewModel,
+                            onExit = { authRoute = AuthRoute.Login },
+                            onFinished = { sessionUnlocked = true },
+                        )
+                    }
+                    AuthRoute.Recovery -> {
+                        val recoveryViewModel: PasswordRecoveryViewModel = viewModel(
+                            key = "recovery_$flowNonce",
+                            factory = PasswordRecoveryViewModel.factory(authRepository),
+                        )
+                        PasswordRecoveryScreen(
+                            viewModel = recoveryViewModel,
+                            entering = iamState.isLoading,
+                            onExit = { authRoute = AuthRoute.Login },
+                            onEnterApp = { email, password ->
+                                enteringFromRecovery = true
+                                iamViewModel.signIn(email, password)
+                            },
+                        )
+                    }
+                }
+            }
         } else {
-            MainShell(onLogout = { sessionUnlocked = false })
+            MainShell(
+                onLogout = {
+                    authRoute = AuthRoute.Login
+                    sessionUnlocked = false
+                },
+            )
         }
     }
 }
@@ -163,6 +256,7 @@ private fun MainShell(onLogout: () -> Unit) {
             milestoneRepository = milestoneRepository,
         ),
     )
+    val kanbanViewModel: KanbanViewModel = viewModel(factory = KanbanViewModel.factory(ptoRepository))
     val groViewModelFactory = remember {
         GroViewModel.factory(
             riskRepository = riskRepository,
@@ -200,7 +294,8 @@ private fun MainShell(onLogout: () -> Unit) {
 
     val onProjectFlow = destination?.route?.startsWith("project_details") == true
     val onGroFlow = destination?.route?.startsWith("gro_") == true
-    val hideBottomBar = onProjectFlow || onGroFlow
+    val onPlanningFlow = destination?.route?.let { it.startsWith("kanban") || it.startsWith("roadmap") } == true
+    val hideBottomBar = onProjectFlow || onGroFlow || onPlanningFlow
     var analyticsVisitNonce by remember { mutableIntStateOf(0) }
     val isAnalyticsTab = destination?.route == Tab.Analytics.route
     LaunchedEffect(isAnalyticsTab) {
@@ -264,10 +359,21 @@ private fun MainShell(onLogout: () -> Unit) {
                     viewModel = ptoViewModel,
                     analyticsViewModel = analyticsViewModel,
                     userDisplayName = displayName,
+                    userRole = iamState.user?.role,
                     onProjectClick = openProject,
                     onOpenProjects = { nav.navigateTab(Tab.Projects.route) },
                     onOpenAnalytics = { nav.navigateTab(Tab.Analytics.route) },
                     onOpenGovernance = { nav.navigateTab(Tab.Governance.route) },
+                    onCreateProject = { nav.navigate(ROUTE_CREATE) { launchSingleTop = true } },
+                    onOpenProjectRisks = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) { launchSingleTop = true }
+                        nav.navigateToGroRisks(projectId)
+                    },
+                    onOpenProjectMilestones = { projectId ->
+                        nav.navigate(projectDetailsRoute(projectId)) { launchSingleTop = true }
+                        nav.navigateToGroMilestones(projectId)
+                    },
+                    onOpenKanban = { nav.navigate(kanbanRoute()) { launchSingleTop = true } },
                     onProfile = goProfile,
                 )
             }
@@ -284,6 +390,7 @@ private fun MainShell(onLogout: () -> Unit) {
                         nav.navigateToGroRisks(projectId)
                     },
                     onOpenAnalytics = { nav.navigateTab(Tab.Analytics.route) },
+                    onOpenKanban = { nav.navigate(kanbanRoute()) { launchSingleTop = true } },
                 )
             }
             composable(
@@ -311,6 +418,8 @@ private fun MainShell(onLogout: () -> Unit) {
                     onNavigateToMilestones = { id ->
                         nav.navigateToGroMilestones(id)
                     },
+                    onOpenKanban = { id -> nav.navigate(kanbanRoute(id)) { launchSingleTop = true } },
+                    onOpenRoadmap = { id -> nav.navigate(roadmapRoute(id)) { launchSingleTop = true } },
                 )
             }
             composable(Tab.Analytics.route) {
@@ -368,6 +477,46 @@ private fun MainShell(onLogout: () -> Unit) {
                             openProject(projectId)
                         }
                     },
+                )
+            }
+            composable(
+                route = ROUTE_KANBAN,
+                arguments = listOf(
+                    navArgument(ARG_PROJECT_ID) {
+                        type = NavType.LongType
+                        defaultValue = NO_PROJECT
+                    },
+                ),
+            ) { backStackEntry ->
+                val projectId = backStackEntry.arguments?.getLong(ARG_PROJECT_ID)?.takeIf { it != NO_PROJECT }
+                KanbanScreen(
+                    viewModel = kanbanViewModel,
+                    initialProjectId = projectId,
+                    defaultAssignee = iamState.user?.name,
+                    onNavigateBack = { nav.popBackStack() },
+                    onOpenRoadmap = { id -> nav.navigate(roadmapRoute(id)) { launchSingleTop = true } },
+                )
+            }
+            composable(
+                route = ROUTE_ROADMAP,
+                arguments = listOf(navArgument(ARG_PROJECT_ID) { type = NavType.LongType }),
+            ) { backStackEntry ->
+                val projectId = backStackEntry.arguments?.getLong(ARG_PROJECT_ID) ?: return@composable
+                val groViewModel: GroViewModel = viewModel(
+                    key = "gro_$projectId",
+                    factory = groViewModelFactory,
+                )
+                LaunchedEffect(projectId) {
+                    groViewModel.loadGovernanceData(projectId)
+                }
+                RoadmapScreen(
+                    projectId = projectId,
+                    ptoViewModel = ptoViewModel,
+                    kanbanViewModel = kanbanViewModel,
+                    groViewModel = groViewModel,
+                    onNavigateBack = { nav.popBackStack() },
+                    onOpenKanban = { id -> nav.navigate(kanbanRoute(id)) { launchSingleTop = true } },
+                    onOpenRisks = { id -> nav.navigateToGroRisks(id) },
                 )
             }
             composable(
