@@ -40,6 +40,7 @@ class OfflineFirstProjectRepository(
     }
 
     override suspend fun deleteProject(projectId: Long) {
+        projectDao.deleteTasksByProjectId(projectId)
         projectDao.deleteProjectById(projectId)
     }
 

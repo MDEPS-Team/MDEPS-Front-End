@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +40,8 @@ fun ProjectWorkbenchCard(
     cardContentDescription: String,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    onDelete: (() -> Unit)? = null,
+    deleteContentDescription: String? = null,
 ) {
     val project = item.project
     val atRisk = project.status == ProjectStatus.AT_RISK
@@ -63,7 +67,7 @@ fun ProjectWorkbenchCard(
                     )
                 }
                 Text(
-                    text = project.name,
+                    text = project.localizedDisplayName(),
                     modifier = Modifier.weight(1f),
                     fontSize = if (compact) 15.sp else 17.sp,
                     fontWeight = FontWeight.Bold,
@@ -71,11 +75,20 @@ fun ProjectWorkbenchCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (!compact && onDelete != null) {
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = deleteContentDescription,
+                            tint = Vx.Muted,
+                        )
+                    }
+                }
                 Pill(statusLabel, pillBg, accent)
             }
             if (!compact) {
                 Text(
-                    text = project.description,
+                    text = project.localizedDisplayDescription(),
                     modifier = Modifier.padding(top = 6.dp),
                     fontSize = 13.sp,
                     color = Vx.Muted,

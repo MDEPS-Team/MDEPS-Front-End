@@ -11,4 +11,6 @@ interface RiskRepository {
     suspend fun insertRisk(risk: Risk): Long
 
     suspend fun updateRisk(risk: Risk)
+
+    suspend fun deleteRisksForProject(projectId: Long)
 }

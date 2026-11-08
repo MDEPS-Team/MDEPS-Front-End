@@ -33,8 +33,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
-import androidx.fragment.app.FragmentActivity
+import com.example.mdeps_application.R
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -75,7 +77,7 @@ import com.example.mdeps_application.ui.theme.MDEPS_APPLICATIONTheme
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -97,12 +99,16 @@ private fun projectDetailsRoute(projectId: Long): String = "project_details/$pro
 private fun groRisksRoute(projectId: Long): String = "gro_risks/$projectId"
 private fun groMilestonesRoute(projectId: Long): String = "gro_milestones/$projectId"
 
-private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
-    Home("home", "Home", Icons.Default.Home),
-    Projects("projects", "Projects", Icons.AutoMirrored.Filled.List),
-    Analytics("analytics", "Analytics", Icons.Default.Info),
-    Governance("governance", "Governance", Icons.Default.CheckCircle),
-    Profile("profile", "Profile", Icons.Default.Person),
+private enum class Tab(
+    val route: String,
+    val labelRes: Int,
+    val icon: ImageVector,
+) {
+    Home("home", R.string.nav_tab_home, Icons.Default.Home),
+    Projects("projects", R.string.nav_tab_projects, Icons.AutoMirrored.Filled.List),
+    Analytics("analytics", R.string.nav_tab_analytics, Icons.Default.Info),
+    Governance("governance", R.string.nav_tab_governance, Icons.Default.CheckCircle),
+    Profile("profile", R.string.nav_tab_profile, Icons.Default.Person),
 }
 
 @Composable
@@ -135,13 +141,18 @@ private fun MainShell() {
     val ptoRepository = remember {
         OfflineFirstProjectRepository(PtoDatabase.create(context.applicationContext).projectDao())
     }
-    val ptoViewModel: PtoViewModel = viewModel(factory = PtoViewModel.factory(ptoRepository))
-
     val groDatabase = remember {
         GroDatabase.create(context.applicationContext)
     }
     val riskRepository = remember { OfflineFirstRiskRepository(groDatabase.riskDao()) }
     val milestoneRepository = remember { OfflineFirstMilestoneRepository(groDatabase.milestoneDao()) }
+    val ptoViewModel: PtoViewModel = viewModel(
+        factory = PtoViewModel.factory(
+            projectRepository = ptoRepository,
+            riskRepository = riskRepository,
+            milestoneRepository = milestoneRepository,
+        ),
+    )
     val groViewModelFactory = remember {
         GroViewModel.factory(
             riskRepository = riskRepository,
@@ -185,11 +196,12 @@ private fun MainShell() {
                         val selected = destination?.hierarchy?.any { it.route == tab.route } == true ||
                             (tab == Tab.Projects && (destination?.route == ROUTE_CREATE || onProjectFlow)) ||
                             (tab == Tab.Governance && onGroFlow)
+                        val tabLabel = stringResource(tab.labelRes)
                         NavigationBarItem(
                             selected = selected,
                             onClick = { nav.navigateTab(tab.route) },
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label, fontSize = 11.sp) },
+                            icon = { Icon(tab.icon, contentDescription = tabLabel) },
+                            label = { Text(tabLabel, fontSize = 11.sp) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Vx.Blue,
                                 selectedTextColor = Vx.Blue,

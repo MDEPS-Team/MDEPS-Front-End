@@ -117,10 +117,10 @@ fun ProjectDetailScreen(
         onNavigateBack = onNavigateBack,
         onNavigateToRisks = { onNavigateToRisks(project.id) },
         onNavigateToMilestones = { onNavigateToMilestones(project.id) },
-        onAddTaskClick = {
+        onAddTaskClick = { taskTitle ->
             viewModel.addTask(
                 projectId = project.id,
-                title = "Task ${tasks.size + 1}",
+                title = taskTitle,
             )
         },
         onQuickAddRisk = { title, description ->
@@ -148,7 +148,7 @@ private fun ProjectDetailContent(
     onNavigateBack: () -> Unit,
     onNavigateToRisks: () -> Unit,
     onNavigateToMilestones: () -> Unit,
-    onAddTaskClick: () -> Unit,
+    onAddTaskClick: (String) -> Unit,
     onQuickAddRisk: (String, String) -> Unit,
     onQuickAddMilestone: (String) -> Unit,
     onTaskCompletedChange: (Task, Boolean) -> Unit,
@@ -221,7 +221,7 @@ private fun ProjectDetailContent(
                 TopAppBar(
                     title = {
                         Text(
-                            text = project.name,
+                            text = project.localizedDisplayName(),
                             fontWeight = FontWeight.Bold,
                         )
                     },
@@ -349,7 +349,10 @@ private fun ProjectDetailContent(
         ProjectQuickActionsSheet(
             visible = showQuickActions,
             onDismiss = { showQuickActions = false },
-            onAddTask = onAddTaskClick,
+            onAddTask = {
+                val title = context.getString(R.string.pto_new_task_title, tasks.size + 1)
+                onAddTaskClick(title)
+            },
             onAddRisk = onQuickAddRisk,
             onAddMilestone = onQuickAddMilestone,
         )
@@ -379,7 +382,7 @@ private fun ProjectSummaryCard(project: Project) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = project.name,
+                text = project.localizedDisplayName(),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -391,7 +394,7 @@ private fun ProjectSummaryCard(project: Project) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Text(
-                text = project.description,
+                text = project.localizedDisplayDescription(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )

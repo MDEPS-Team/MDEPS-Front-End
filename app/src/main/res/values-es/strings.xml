@@ -1,5 +1,11 @@
 <resources>
-    <string name="app_name">MDEPS_APPLICATION</string>
+    <string name="app_name">Vantage PMO</string>
+
+    <string name="nav_tab_home">Inicio</string>
+    <string name="nav_tab_projects">Proyectos</string>
+    <string name="nav_tab_analytics">Analítica</string>
+    <string name="nav_tab_governance">Gobernanza</string>
+    <string name="nav_tab_profile">Perfil</string>
 
     <!-- IAM Login -->
     <string name="iam_login_title">Vantage PMO</string>
@@ -36,6 +42,12 @@
     <string name="iam_profile_user_role">Director Senior de Entrega y PMO</string>
     <string name="iam_profile_verified_badge">ID corporativo verificado</string>
     <string name="iam_profile_avatar_updated">Foto de perfil actualizada</string>
+    <string name="profile_preferences_title">Preferencias</string>
+    <string name="profile_preferences_subtitle">Elige el idioma de Vantage PMO.</string>
+    <string name="profile_language_en">English (EN)</string>
+    <string name="profile_language_es">Español (ES)</string>
+    <string name="profile_a11y_language_en">Cambiar el idioma de la app a inglés</string>
+    <string name="profile_a11y_language_es">Cambiar el idioma de la app a español</string>
 
     <!-- IAM Perfil — accesibilidad -->
     <string name="iam_a11y_profile_avatar">Imagen del avatar de perfil</string>
@@ -117,7 +129,21 @@
     <string name="pto_project_description_label">Descripción</string>
     <string name="pto_project_status_label">Estado</string>
     <string name="pto_tasks_section_title">Tareas</string>
-    <string name="pto_empty_projects">Aún no hay proyectos. Toca Agregar proyecto para crear uno.</string>
+    <string name="pto_empty_projects">Aún no hay proyectos. Toca Nueva iniciativa para crear uno.</string>
+    <string name="pto_demo_project_name">Proyecto demo %1$s</string>
+    <string name="pto_demo_project_description">Registro de ejemplo del portafolio para pruebas offline.</string>
+    <string name="pto_new_task_title">Tarea %1$d</string>
+    <string name="pto_create_sheet_title">Nueva iniciativa</string>
+    <string name="pto_create_name_label">Nombre de la iniciativa</string>
+    <string name="pto_create_description_label">Resumen ejecutivo</string>
+    <string name="pto_create_status_label">Estado inicial</string>
+    <string name="pto_create_confirm">Crear proyecto</string>
+    <string name="pto_create_cancel">Cancelar</string>
+    <string name="pto_delete_project_title">¿Eliminar proyecto?</string>
+    <string name="pto_delete_project_message">Se eliminará \"%1$s\" junto con tareas, riesgos e hitos.</string>
+    <string name="pto_delete_project_confirm">Eliminar</string>
+    <string name="pto_delete_project_cancel">Cancelar</string>
+    <string name="pto_a11y_delete_project">Eliminar este proyecto</string>
     <string name="pto_empty_tasks">No hay tareas en este proyecto. Toca Agregar tarea para crear una.</string>
     <string name="pto_task_completed">Completada</string>
     <string name="pto_task_pending">Pendiente</string>
@@ -216,6 +242,10 @@
     <string name="gro_policy_budget_desc">Alerta al superar el 90% del tope</string>
 
     <string name="gro_governance_open_milestones">Abrir línea de tiempo</string>
+    <string name="gro_seed_risk_server_outage_title">Caída de servidores</string>
+    <string name="gro_seed_risk_server_outage_desc">La capacidad de conmutación del data center está por debajo del SLA en hora pico.</string>
+    <string name="gro_seed_milestone_arch_review_title">Gate de revisión de arquitectura</string>
+    <string name="gro_seed_milestone_steering_title">Comité directivo ejecutivo</string>
     <string name="gro_seed_demo_data">Cargar datos de ejemplo</string>
     <string name="gro_a11y_seed_demo_data">Cargar datos de gobernanza de ejemplo para este proyecto</string>
     <string name="gro_a11y_navigate_back">Volver</string>

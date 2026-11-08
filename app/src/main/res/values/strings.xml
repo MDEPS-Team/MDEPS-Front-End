@@ -1,5 +1,11 @@
 <resources>
-    <string name="app_name">MDEPS_APPLICATION</string>
+    <string name="app_name">Vantage PMO</string>
+
+    <string name="nav_tab_home">Home</string>
+    <string name="nav_tab_projects">Projects</string>
+    <string name="nav_tab_analytics">Analytics</string>
+    <string name="nav_tab_governance">Governance</string>
+    <string name="nav_tab_profile">Profile</string>
 
     <!-- IAM Login -->
     <string name="iam_login_title">Vantage PMO</string>
@@ -36,6 +42,12 @@
     <string name="iam_profile_user_role">Senior Delivery &amp; PMO Director</string>
     <string name="iam_profile_verified_badge">Verified corporate ID</string>
     <string name="iam_profile_avatar_updated">Profile photo updated</string>
+    <string name="profile_preferences_title">Preferences</string>
+    <string name="profile_preferences_subtitle">Choose the language used across Vantage PMO.</string>
+    <string name="profile_language_en">English (EN)</string>
+    <string name="profile_language_es">Español (ES)</string>
+    <string name="profile_a11y_language_en">Switch app language to English</string>
+    <string name="profile_a11y_language_es">Switch app language to Spanish</string>
 
     <!-- IAM Profile — accessibility -->
     <string name="iam_a11y_profile_avatar">Profile avatar image</string>
@@ -117,7 +129,21 @@
     <string name="pto_project_description_label">Description</string>
     <string name="pto_project_status_label">Status</string>
     <string name="pto_tasks_section_title">Tasks</string>
-    <string name="pto_empty_projects">No projects yet. Tap Add Project to create one.</string>
+    <string name="pto_empty_projects">No projects yet. Tap New initiative to create one.</string>
+    <string name="pto_demo_project_name">Demo project %1$s</string>
+    <string name="pto_demo_project_description">Sample portfolio record created for offline testing.</string>
+    <string name="pto_new_task_title">Task %1$d</string>
+    <string name="pto_create_sheet_title">New initiative</string>
+    <string name="pto_create_name_label">Initiative name</string>
+    <string name="pto_create_description_label">Executive brief</string>
+    <string name="pto_create_status_label">Initial status</string>
+    <string name="pto_create_confirm">Create project</string>
+    <string name="pto_create_cancel">Cancel</string>
+    <string name="pto_delete_project_title">Delete project?</string>
+    <string name="pto_delete_project_message">This removes \"%1$s\" including tasks, risks, and milestones.</string>
+    <string name="pto_delete_project_confirm">Delete</string>
+    <string name="pto_delete_project_cancel">Cancel</string>
+    <string name="pto_a11y_delete_project">Delete this project</string>
     <string name="pto_empty_tasks">No tasks for this project. Tap Add Task to create one.</string>
     <string name="pto_task_completed">Completed</string>
     <string name="pto_task_pending">Pending</string>
@@ -216,6 +242,10 @@
     <string name="gro_policy_budget_desc">Alert when spend exceeds 90% of cap</string>
 
     <string name="gro_governance_open_milestones">Open timeline</string>
+    <string name="gro_seed_risk_server_outage_title">Server outage</string>
+    <string name="gro_seed_risk_server_outage_desc">Primary data center failover capacity is below SLA during peak load.</string>
+    <string name="gro_seed_milestone_arch_review_title">Architecture review gate</string>
+    <string name="gro_seed_milestone_steering_title">Executive steering committee</string>
     <string name="gro_seed_demo_data">Load sample data</string>
     <string name="gro_a11y_seed_demo_data">Load sample governance data for this project</string>
     <string name="gro_a11y_navigate_back">Navigate back</string>
