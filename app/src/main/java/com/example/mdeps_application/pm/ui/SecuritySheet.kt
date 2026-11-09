@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.example.mdeps_application.iam.ui
+package com.example.mdeps_application.pm.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column

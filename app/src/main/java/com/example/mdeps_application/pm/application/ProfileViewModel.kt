@@ -1,4 +1,4 @@
-package com.example.mdeps_application.iam.application
+package com.example.mdeps_application.pm.application
 
 import android.content.ContentResolver
 import android.content.Intent
@@ -14,10 +14,10 @@ import com.example.mdeps_application.gro.domain.Risk
 import com.example.mdeps_application.gro.domain.RiskRepository
 import com.example.mdeps_application.gro.domain.RiskSeverity
 import com.example.mdeps_application.gro.domain.RiskStatus
-import com.example.mdeps_application.iam.data.ProfileDigestFrequency
-import com.example.mdeps_application.iam.data.ProfileMethodology
-import com.example.mdeps_application.iam.data.ProfileOperationalPrefs
-import com.example.mdeps_application.iam.data.ProfilePreferencesStore
+import com.example.mdeps_application.pm.domain.ProfileDigestFrequency
+import com.example.mdeps_application.pm.domain.ProfileMethodology
+import com.example.mdeps_application.pm.domain.ProfileOperationalPrefs
+import com.example.mdeps_application.pm.domain.ProfileRepository
 import com.example.mdeps_application.iam.domain.AuthRepository
 import com.example.mdeps_application.iam.domain.User
 import com.example.mdeps_application.pto.domain.Project
@@ -61,7 +61,7 @@ sealed interface ProfileEvent {
 
 class ProfileViewModel(
     private val authRepository: AuthRepository,
-    private val profilePreferencesStore: ProfilePreferencesStore,
+    private val profileRepository: ProfileRepository,
     private val projectRepository: ProjectRepository,
     private val riskRepository: RiskRepository,
     private val milestoneRepository: MilestoneRepository,
@@ -81,7 +81,7 @@ class ProfileViewModel(
             val core = combine(
                 authRepository.observeUserProfile(),
                 authRepository.getToken(),
-                profilePreferencesStore.observeOperationalPrefs(),
+                profileRepository.observeOperationalPrefs(),
                 projectRepository.observeProjects(),
                 projectRepository.observeAllTasks(),
             ) { user, token, operational, projects, tasks ->
@@ -225,7 +225,7 @@ class ProfileViewModel(
     fun setDarkStudio(enabled: Boolean) {
         _uiState.update { it.copy(operational = it.operational.copy(darkStudioTheme = enabled)) }
         viewModelScope.launch {
-            profilePreferencesStore.saveOperationalPrefs(_uiState.value.operational)
+            profileRepository.saveOperationalPrefs(_uiState.value.operational)
         }
     }
 
@@ -237,7 +237,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             val state = _uiState.value
             _uiState.update { it.copy(isSaving = true) }
-            profilePreferencesStore.saveOperationalPrefs(state.operational)
+            profileRepository.saveOperationalPrefs(state.operational)
             val email = state.draftEmail.trim()
             if (email.isNotBlank() && email != state.user?.email) {
                 authRepository.updateUserEmail(email)
@@ -272,7 +272,7 @@ class ProfileViewModel(
     companion object {
         fun factory(
             authRepository: AuthRepository,
-            profilePreferencesStore: ProfilePreferencesStore,
+            profileRepository: ProfileRepository,
             projectRepository: ProjectRepository,
             riskRepository: RiskRepository,
             milestoneRepository: MilestoneRepository,
@@ -283,7 +283,7 @@ class ProfileViewModel(
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     return ProfileViewModel(
                         authRepository,
-                        profilePreferencesStore,
+                        profileRepository,
                         projectRepository,
                         riskRepository,
                         milestoneRepository,

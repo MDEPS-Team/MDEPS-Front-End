@@ -1,43 +1,23 @@
-package com.example.mdeps_application.iam.data
+package com.example.mdeps_application.pm.data
 
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import com.example.mdeps_application.pm.domain.ProfileDigestFrequency
+import com.example.mdeps_application.pm.domain.ProfileMethodology
+import com.example.mdeps_application.pm.domain.ProfileOperationalPrefs
+import com.example.mdeps_application.pm.domain.ProfileRepository
+import com.example.mdeps_application.pm.domain.ProfileWorkspacePrefs
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-private const val PROFILE_DATA_STORE = "profile_preferences"
-
-val Context.profileDataStore: DataStore<Preferences> by preferencesDataStore(name = PROFILE_DATA_STORE)
-
-enum class ProfileMethodology { HYBRID, WATERFALL }
-
-enum class ProfileDigestFrequency { DAILY, WEEKLY }
-
-data class ProfileWorkspacePrefs(
-    val organization: String = "Enterprise Solutions Global",
-    val location: String = "Madrid HQ",
-    val floorLabel: String = "Floor 14",
-)
-
-data class ProfileOperationalPrefs(
-    val timezoneKey: String = "utc_plus_1",
-    val methodology: ProfileMethodology = ProfileMethodology.HYBRID,
-    val digest: ProfileDigestFrequency = ProfileDigestFrequency.DAILY,
-    val darkStudioTheme: Boolean = false,
-    val workspace: ProfileWorkspacePrefs = ProfileWorkspacePrefs(),
-    val passwordLastUpdatedAt: Long = System.currentTimeMillis() - (42L * 86_400_000L),
-)
-
-class ProfilePreferencesStore(
+class DataStoreProfileRepository(
     private val dataStore: DataStore<Preferences>,
-) {
-    fun observeOperationalPrefs(): Flow<ProfileOperationalPrefs> =
+) : ProfileRepository {
+    override fun observeOperationalPrefs(): Flow<ProfileOperationalPrefs> =
         dataStore.data.map { prefs ->
             ProfileOperationalPrefs(
                 timezoneKey = prefs[KEY_TIMEZONE] ?: "utc_plus_1",
@@ -60,10 +40,10 @@ class ProfilePreferencesStore(
             )
         }
 
-    fun observeDarkStudioTheme(): Flow<Boolean> =
+    override fun observeDarkStudioTheme(): Flow<Boolean> =
         dataStore.data.map { it[KEY_DARK_STUDIO] ?: false }
 
-    suspend fun saveOperationalPrefs(prefs: ProfileOperationalPrefs) {
+    override suspend fun saveOperationalPrefs(prefs: ProfileOperationalPrefs) {
         dataStore.edit { editor ->
             editor[KEY_TIMEZONE] = prefs.timezoneKey
             editor[KEY_METHODOLOGY] = when (prefs.methodology) {

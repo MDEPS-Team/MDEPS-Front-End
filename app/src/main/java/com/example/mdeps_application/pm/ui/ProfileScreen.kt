@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.example.mdeps_application.iam.ui
+package com.example.mdeps_application.pm.ui
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -58,7 +58,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -77,10 +76,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mdeps_application.R
-import com.example.mdeps_application.iam.application.ProfileViewModel
+import com.example.mdeps_application.pm.application.ProfileViewModel
 import kotlinx.coroutines.launch
-import com.example.mdeps_application.iam.data.ProfileDigestFrequency
-import com.example.mdeps_application.iam.data.ProfileMethodology
+import com.example.mdeps_application.pm.domain.ProfileDigestFrequency
+import com.example.mdeps_application.pm.domain.ProfileMethodology
 import com.example.mdeps_application.ui.Caption
 import com.example.mdeps_application.ui.LocalAppSnackbarHostState
 import com.example.mdeps_application.ui.Pill
