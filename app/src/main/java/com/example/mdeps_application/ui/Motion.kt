@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,7 +29,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.outlined.SpaceDashboard
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,11 +46,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -58,6 +58,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.mdeps_application.R
 import android.provider.Settings
 import kotlinx.coroutines.delay
 
@@ -325,23 +326,12 @@ fun VxTextField(
 
 // ───────────────────────── MARCA ─────────────────────────
 
-/** Marca de Vantage: cuadrado redondeado con cuadrícula tipo dashboard. */
+/** Marca de Vantage PMO: la "V" blanca sobre el cuadrado azul del logo. */
 @Composable
 fun VxBrandMark(size: androidx.compose.ui.unit.Dp = 64.dp, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(size)
-            .clip(RoundedCornerShape(size * 0.28f))
-            .background(
-                Brush.linearGradient(listOf(Color(0xFF2F7BF5), Color(0xFF0B47B0))),
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.SpaceDashboard,
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(size * 0.42f),
-        )
-    }
+    Image(
+        painter = painterResource(R.drawable.ic_brand_mark),
+        contentDescription = null,
+        modifier = modifier.size(size),
+    )
 }
