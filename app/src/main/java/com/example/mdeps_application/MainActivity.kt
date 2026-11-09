@@ -30,12 +30,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
-import com.example.mdeps_application.R
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -56,11 +54,11 @@ import com.example.mdeps_application.gro.data.local.GroDatabase
 import com.example.mdeps_application.gro.ui.MilestoneTimelineScreen
 import com.example.mdeps_application.gro.ui.RiskMatrixScreen
 import com.example.mdeps_application.iam.application.IamViewModel
-import com.example.mdeps_application.iam.application.ProfileViewModel
+import com.example.mdeps_application.pm.application.ProfileViewModel
 import com.example.mdeps_application.iam.data.DataStoreAuthRepository
-import com.example.mdeps_application.iam.data.ProfilePreferencesStore
+import com.example.mdeps_application.pm.data.DataStoreProfileRepository
 import com.example.mdeps_application.iam.data.iamAuthDataStore
-import com.example.mdeps_application.iam.data.profileDataStore
+import com.example.mdeps_application.pm.data.profileDataStore
 import com.example.mdeps_application.iam.ui.LoginScreen
 import com.example.mdeps_application.iam.ui.PasswordRecoveryScreen
 import com.example.mdeps_application.iam.ui.RegisterFlowScreen
@@ -74,7 +72,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
-import com.example.mdeps_application.iam.ui.ProfileScreen
+import com.example.mdeps_application.pm.ui.ProfileScreen
 import com.example.mdeps_application.pto.application.PtoViewModel
 import com.example.mdeps_application.pto.data.OfflineFirstProjectRepository
 import com.example.mdeps_application.pto.data.local.PtoDatabase
@@ -145,8 +143,8 @@ fun VantagePmoApp() {
     // Cambia en cada entrada a un flujo para que su ViewModel arranque limpio.
     var flowNonce by rememberSaveable { mutableIntStateOf(0) }
     val context = LocalContext.current
-    val profilePreferencesStore = remember { ProfilePreferencesStore(context.profileDataStore) }
-    val darkStudio by profilePreferencesStore.observeDarkStudioTheme()
+    val profileRepository = remember { DataStoreProfileRepository(context.profileDataStore) }
+    val darkStudio by profileRepository.observeDarkStudioTheme()
         .collectAsStateWithLifecycle(initialValue = false)
     val versionName = remember {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
@@ -280,11 +278,11 @@ private fun MainShell(onLogout: () -> Unit) {
             milestoneRepository = milestoneRepository,
         ),
     )
-    val profilePreferencesStore = remember { ProfilePreferencesStore(context.profileDataStore) }
+    val profileRepository = remember { DataStoreProfileRepository(context.profileDataStore) }
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModel.factory(
             authRepository = authRepository,
-            profilePreferencesStore = profilePreferencesStore,
+            profileRepository = profileRepository,
             projectRepository = ptoRepository,
             riskRepository = riskRepository,
             milestoneRepository = milestoneRepository,
