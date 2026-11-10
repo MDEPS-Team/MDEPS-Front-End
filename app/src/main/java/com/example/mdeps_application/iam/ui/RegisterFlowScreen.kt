@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material3.Checkbox
@@ -128,12 +129,12 @@ fun RegisterFlowScreen(
     val goBack: () -> Unit = { if (!viewModel.back()) onExit() }
     BackHandler(enabled = state.step != RegistrationStep.DONE) { goBack() }
 
-    state.submitErrorRes?.let { res ->
-        val message = stringResource(res)
-        LaunchedEffect(res) {
-            snackbarHostState.showSnackbar(message)
-            viewModel.clearSubmitError()
-        }
+    val submitErrorMessage = state.submitErrorMessage
+    val genericSubmitError = state.submitErrorRes?.let { stringResource(it) }
+    LaunchedEffect(submitErrorMessage, genericSubmitError) {
+        val message = submitErrorMessage?.takeIf { it.isNotBlank() } ?: genericSubmitError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearSubmitError()
     }
 
     val stepLabels = listOf(
@@ -358,6 +359,19 @@ private fun ContactStep(state: RegistrationUiState, vm: RegistrationViewModel, o
             height = 48.dp,
         )
         OrDivider()
+        VxTextField(
+            value = d.username,
+            onValueChange = { v ->
+                vm.update {
+                    it.copy(username = v.filter { c -> c.isLetterOrDigit() || c == '.' || c == '_' || c == '-' }.take(32))
+                }
+            },
+            label = stringResource(R.string.reg_username),
+            placeholder = stringResource(R.string.reg_username_placeholder),
+            leadingIcon = Icons.Default.Person,
+            keyboardType = KeyboardType.Ascii,
+            error = errorText(state, RegistrationField.USERNAME),
+        )
         VxTextField(
             value = d.email,
             onValueChange = { v -> vm.update { it.copy(email = v) } },

@@ -34,7 +34,7 @@ class DataStoreAuthRepository(
         val user = if (stored != null && stored.email.equals(email, ignoreCase = true)) {
             stored
         } else {
-            MOCK_USER.copy(email = email)
+            MOCK_USER.copy(email = email, username = email.substringBefore("@").ifBlank { email })
         }
         return Result.success(user)
     }
@@ -51,9 +51,11 @@ class DataStoreAuthRepository(
             PmoRole.ENTERPRISE_OWNER -> ROLE_ENTERPRISE_OWNER
             else -> ROLE_PROJECT_LEADER
         }
+        val email = draft.email.trim()
         val user = User(
-            id = "usr-ent-${draft.email.trim().lowercase().hashCode().toUInt()}",
-            email = draft.email.trim(),
+            id = "usr-ent-${email.lowercase().hashCode().toUInt()}",
+            username = email.substringBefore("@").ifBlank { email },
+            email = email,
             name = draft.fullName,
             role = role,
             avatarUrl = null,
@@ -109,6 +111,7 @@ class DataStoreAuthRepository(
     override suspend fun saveUserProfile(user: User) {
         dataStore.edit { preferences ->
             preferences[KEY_USER_ID] = user.id
+            preferences[KEY_USER_USERNAME] = user.username
             preferences[KEY_USER_EMAIL] = user.email
             preferences[KEY_USER_NAME] = user.name
             preferences[KEY_USER_ROLE] = user.role
@@ -124,6 +127,9 @@ class DataStoreAuthRepository(
             val id = preferences[KEY_USER_ID] ?: return@map null
             User(
                 id = id,
+                username = preferences[KEY_USER_USERNAME].orEmpty().ifBlank {
+                    preferences[KEY_USER_EMAIL].orEmpty().substringBefore("@")
+                },
                 email = preferences[KEY_USER_EMAIL].orEmpty(),
                 name = preferences[KEY_USER_NAME].orEmpty(),
                 role = preferences[KEY_USER_ROLE].orEmpty(),
@@ -161,6 +167,7 @@ class DataStoreAuthRepository(
         private val KEY_ACCESS_TOKEN = stringPreferencesKey("access_token")
         private val KEY_REFRESH_TOKEN = stringPreferencesKey("refresh_token")
         private val KEY_USER_ID = stringPreferencesKey("profile_user_id")
+        private val KEY_USER_USERNAME = stringPreferencesKey("profile_user_username")
         private val KEY_USER_EMAIL = stringPreferencesKey("profile_user_email")
         private val KEY_USER_NAME = stringPreferencesKey("profile_user_name")
         private val KEY_USER_ROLE = stringPreferencesKey("profile_user_role")
@@ -168,6 +175,7 @@ class DataStoreAuthRepository(
 
         private val MOCK_USER = User(
             id = "usr-ent-88492",
+            username = "alex.vance",
             email = "alex.vance@enterprise.com",
             name = "Alejandro Vance Rivas",
             role = "Senior Delivery & PMO Director",

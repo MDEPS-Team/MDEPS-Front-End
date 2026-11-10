@@ -104,6 +104,16 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
     var showSecuritySheet by rememberSaveable { mutableStateOf(false) }
 
+    val fallbackName = stringResource(R.string.home_greeting_fallback_name)
+    val fallbackRole = stringResource(R.string.iam_profile_role_fallback)
+    val displayName = user?.name?.takeIf { it.isNotBlank() }
+        ?: user?.username?.takeIf { it.isNotBlank() }
+        ?: fallbackName
+    val displayUsername = user?.username?.takeIf { it.isNotBlank() }.orEmpty()
+    val displayRole = user?.role?.takeIf { it.isNotBlank() } ?: fallbackRole
+    val displayEmail = user?.email?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.iam_profile_email_unavailable)
+
     val avatarUri = user?.avatarUrl?.let(Uri::parse)
     val pickAvatar = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -150,8 +160,9 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             ProfileHeroCard(
-                name = user?.name.orEmpty(),
-                role = user?.role.orEmpty(),
+                name = displayName,
+                username = displayUsername,
+                role = displayRole,
                 organization = state.operational.workspace.organization,
                 location = state.operational.workspace.location,
                 floor = state.operational.workspace.floorLabel,
@@ -186,7 +197,8 @@ fun ProfileScreen(
             }
 
             AccountSecuritySection(
-                email = state.draftEmail.ifBlank { user?.email.orEmpty() },
+                username = displayUsername,
+                email = state.draftEmail.ifBlank { displayEmail },
                 passwordDaysAgo = state.passwordDaysAgo,
                 onEdit = { showSecuritySheet = true },
                 onPassphraseClick = { showSecuritySheet = true },
@@ -206,6 +218,7 @@ fun ProfileScreen(
             ProfileLanguagePreferenceSection()
 
             AccessGovernanceCard(
+                masterRole = displayRole,
                 tenantId = viewModel.vantageTenantId(),
                 auditRecords = state.auditRecordCount,
                 onOpenAudit = onOpenAuditTrail,
@@ -262,6 +275,7 @@ fun ProfileScreen(
 @Composable
 private fun ProfileHeroCard(
     name: String,
+    username: String,
     role: String,
     organization: String,
     location: String,
@@ -318,8 +332,27 @@ private fun ProfileHeroCard(
                     )
                 }
                 Spacer(Modifier.height(10.dp))
-                Text(name, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-                Text(role, color = Vx.Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.CenterHorizontally))
+                Text(name, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.align(Alignment.CenterHorizontally), color = Vx.Ink)
+                if (username.isNotBlank()) {
+                    Text(
+                        text = stringResource(R.string.iam_profile_username_handle, username),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Vx.Muted,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(top = 4.dp),
+                    )
+                }
+                Text(
+                    role,
+                    color = Vx.Blue,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 4.dp),
+                )
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     MetaChip(Icons.Default.Business, organization, Modifier.weight(1f))
@@ -371,6 +404,7 @@ private fun ProfileKpiCard(
 
 @Composable
 private fun AccountSecuritySection(
+    username: String,
     email: String,
     passwordDaysAgo: Int,
     onEdit: () -> Unit,
@@ -379,10 +413,19 @@ private fun AccountSecuritySection(
     VxCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.iam_profile_account_security), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(stringResource(R.string.iam_profile_account_security), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Vx.Ink)
                 TextButton(onClick = onEdit) {
                     Text(stringResource(R.string.iam_profile_edit), color = Vx.Blue, fontWeight = FontWeight.SemiBold)
                 }
+            }
+            if (username.isNotBlank()) {
+                SecurityRow(
+                    icon = Icons.Default.Person,
+                    title = stringResource(R.string.iam_profile_username_label),
+                    subtitle = stringResource(R.string.iam_profile_username_handle, username),
+                    trailing = {},
+                )
+                HorizontalDivider(color = Vx.Line)
             }
             SecurityRow(
                 icon = Icons.Default.Email,
@@ -562,6 +605,7 @@ private fun PmoPreferencesSection(
 
 @Composable
 private fun AccessGovernanceCard(
+    masterRole: String,
     tenantId: String,
     auditRecords: Int,
     onOpenAudit: () -> Unit,
@@ -579,9 +623,10 @@ private fun AccessGovernanceCard(
                 Pill(text = stringResource(R.string.iam_profile_tier_badge), bg = Vx.Surface, fg = Vx.Blue)
             }
             Text(
-                stringResource(R.string.iam_profile_master_role),
+                masterRole,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(top = 10.dp),
+                color = Vx.Ink,
             )
             Text(stringResource(R.string.iam_profile_master_role_desc), fontSize = 12.sp, color = Vx.Muted)
             Text(

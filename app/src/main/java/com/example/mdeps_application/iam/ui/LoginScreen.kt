@@ -23,9 +23,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.PhoneIphone
 import androidx.compose.material.icons.outlined.Window
@@ -79,7 +79,7 @@ fun LoginScreen(
     onCreateAccount: () -> Unit,
     onForgotPassword: () -> Unit,
 ) {
-    var corporateEmail by rememberSaveable { mutableStateOf("") }
+    var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -89,7 +89,7 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    val emailFieldDescription = stringResource(R.string.iam_a11y_corporate_email_field)
+    val usernameFieldDescription = stringResource(R.string.iam_a11y_username_field)
     val passwordFieldDescription = stringResource(R.string.iam_a11y_password_field)
     val signInButtonDescription = stringResource(R.string.iam_a11y_sign_in_button)
     val biometricButtonDescription = stringResource(R.string.iam_a11y_biometric_button)
@@ -212,14 +212,14 @@ fun LoginScreen(
                     )
                 }
                 VxTextField(
-                    value = corporateEmail,
-                    onValueChange = { corporateEmail = it },
-                    label = stringResource(R.string.iam_login_corporate_email_label),
-                    placeholder = "alex.vance@enterprise.com",
-                    leadingIcon = Icons.Default.Email,
-                    keyboardType = KeyboardType.Email,
+                    value = username,
+                    onValueChange = { username = it },
+                    label = stringResource(R.string.iam_login_username_label),
+                    placeholder = "alex.vance",
+                    leadingIcon = Icons.Default.Person,
+                    keyboardType = KeyboardType.Text,
                     enabled = !uiState.isLoading,
-                    modifier = Modifier.semantics { contentDescription = emailFieldDescription },
+                    modifier = Modifier.semantics { contentDescription = usernameFieldDescription },
                 )
                 VxTextField(
                     value = password,
@@ -232,7 +232,7 @@ fun LoginScreen(
                     imeAction = ImeAction.Done,
                     keyboardActions = KeyboardActions(onDone = {
                         allowAutoEnter = true
-                        viewModel.signIn(corporateEmail, password)
+                        viewModel.signIn(username, password)
                     }),
                     modifier = Modifier.semantics { contentDescription = passwordFieldDescription },
                 )
@@ -256,7 +256,7 @@ fun LoginScreen(
                         text = stringResource(R.string.iam_login_sign_in),
                         onClick = {
                             allowAutoEnter = true
-                            viewModel.signIn(corporateEmail, password)
+                            viewModel.signIn(username, password)
                         },
                         loading = uiState.isLoading,
                         modifier = Modifier
