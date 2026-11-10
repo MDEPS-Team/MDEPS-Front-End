@@ -11,6 +11,7 @@
     <string name="iam_login_title">Vantage PMO</string>
     <string name="iam_login_subtitle">Oficina de Gestión de Proyectos</string>
     <string name="iam_login_corporate_email_label">Correo corporativo</string>
+    <string name="iam_login_username_label">Nombre de usuario</string>
     <string name="iam_login_password_label">Contraseña</string>
     <string name="iam_login_sign_in">Iniciar sesión</string>
 
@@ -18,6 +19,7 @@
     <string name="iam_a11y_email_icon">Ícono del campo de correo corporativo</string>
     <string name="iam_a11y_password_icon">Ícono del campo de contraseña</string>
     <string name="iam_a11y_corporate_email_field">Campo de entrada de correo corporativo</string>
+    <string name="iam_a11y_username_field">Campo de nombre de usuario</string>
     <string name="iam_a11y_password_field">Campo de contraseña, caracteres ocultos</string>
     <string name="iam_a11y_sign_in_button">Iniciar sesión en tu cuenta</string>
 
@@ -83,6 +85,10 @@
     <string name="iam_profile_save">Guardar cambios del perfil</string>
     <string name="iam_profile_saved">Preferencias de perfil guardadas</string>
     <string name="iam_profile_logout">Cerrar sesión activa</string>
+    <string name="iam_profile_username_label">Nombre de usuario</string>
+    <string name="iam_profile_username_handle">@%1$s</string>
+    <string name="iam_profile_role_fallback">Miembro PMO</string>
+    <string name="iam_profile_email_unavailable">Sin correo corporativo registrado</string>
     <string name="profile_preferences_title">Preferencias</string>
     <string name="profile_preferences_subtitle">Elige el idioma de Vantage PMO.</string>
     <string name="profile_language_en">English (EN)</string>
@@ -579,6 +585,8 @@
     <string name="reg_cta_to_contact">Continuar a contacto</string>
     <string name="reg_contact_heading">Información de contacto</string>
     <string name="reg_sso_link">Vincular Google Workspace · Usar SSO</string>
+    <string name="reg_username">Nombre de usuario</string>
+    <string name="reg_username_placeholder">alex.vance (opcional)</string>
     <string name="reg_email">Correo corporativo</string>
     <string name="reg_phone">Número telefónico móvil</string>
     <string name="reg_password">Contraseña de acceso</string>
@@ -623,6 +631,7 @@
     <string name="reg_cta_enter">Entrar a mi espacio</string>
     <string name="reg_error_required">Este campo es obligatorio</string>
     <string name="reg_error_birth_date">Ingresa una fecha válida (debes ser mayor de 16 años)</string>
+    <string name="reg_error_username">Ingresa un usuario (3–32 letras, números, . _ -) o usa un correo válido</string>
     <string name="reg_error_email">Ingresa un correo corporativo válido</string>
     <string name="reg_error_phone">Ingresa un número de teléfono válido</string>
     <string name="reg_error_password_weak">Usa al menos 8 caracteres combinando letras, números y símbolos</string>

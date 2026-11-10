@@ -4,7 +4,7 @@ package com.example.mdeps_application.iam.data.remote
  * REST payloads for IAM. Wire to Retrofit/Ktor when the backend is available.
  */
 data class LoginRequestDto(
-    val email: String,
+    val username: String,
     val password: String,
 )
 

@@ -10,6 +10,7 @@ import com.example.mdeps_application.iam.domain.AuthRepository
 import com.example.mdeps_application.iam.domain.Credentials
 import com.example.mdeps_application.iam.domain.Token
 import com.example.mdeps_application.iam.domain.User
+import com.example.mdeps_application.iam.domain.repository.IamRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +27,7 @@ data class IamUiState(
 
 class IamViewModel(
     private val authRepository: AuthRepository,
+    private val iamRepository: IamRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(IamUiState())
@@ -43,18 +45,18 @@ class IamViewModel(
         }
     }
 
-    fun signIn(email: String, password: String) {
+    fun signIn(username: String, password: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val result = authRepository.login(Credentials(email = email.trim(), password = password))
-            result.fold(
-                onSuccess = { user ->
-                    persistSession(user)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, isAuthenticated = false) }
+            val trimmedUsername = username.trim()
+            iamRepository.login(trimmedUsername, password).fold(
+                onSuccess = { session ->
+                    persistSession(session.user, session.accessToken)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             isAuthenticated = true,
-                            user = user,
+                            user = session.user,
                             errorMessage = null,
                         )
                     }
@@ -139,13 +141,20 @@ class IamViewModel(
         }
     }
 
-    private suspend fun persistSession(user: User) {
+    private suspend fun persistSession(user: User, accessToken: String) {
         authRepository.saveUserProfile(user)
         authRepository.saveToken(
             Token(
-                accessToken = "mock-access-${user.id}",
-                refreshToken = "mock-refresh-${user.id}",
+                accessToken = accessToken,
+                refreshToken = accessToken,
             ),
+        )
+    }
+
+    private suspend fun persistSession(user: User) {
+        persistSession(
+            user,
+            "mock-access-${user.id}",
         )
     }
 
@@ -153,11 +162,14 @@ class IamViewModel(
         private const val BIOMETRIC_BOOTSTRAP_EMAIL = "biometric@vantage.internal"
         private const val BIOMETRIC_BOOTSTRAP_PASSWORD = "biometric-gate"
 
-        fun factory(authRepository: AuthRepository): ViewModelProvider.Factory =
+        fun factory(
+            authRepository: AuthRepository,
+            iamRepository: IamRepository,
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return IamViewModel(authRepository) as T
+                    return IamViewModel(authRepository, iamRepository) as T
                 }
             }
     }

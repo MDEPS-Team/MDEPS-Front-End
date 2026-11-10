@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.mdeps_application.R
+import com.example.mdeps_application.iam.data.remote.toRegisteredUser
 import com.example.mdeps_application.iam.domain.AuthRepository
 import com.example.mdeps_application.iam.domain.EmailPolicy
 import com.example.mdeps_application.iam.domain.PasswordPolicy
 import com.example.mdeps_application.iam.domain.RegistrationDraft
 import com.example.mdeps_application.iam.domain.Token
 import com.example.mdeps_application.iam.domain.User
+import com.example.mdeps_application.iam.domain.UsernamePolicy
+import com.example.mdeps_application.iam.domain.withCorporateEmail
+import com.example.mdeps_application.iam.domain.repository.IamRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +25,7 @@ enum class RegistrationStep { PERSONAL, CONTACT, PROFESSION, ROLE, DONE }
 
 /** Campos validables; el valor es el recurso de texto del error. */
 enum class RegistrationField {
-    FIRST_NAME, LAST_NAME, BIRTH_DATE, EMAIL, PHONE, PASSWORD, CONFIRM_PASSWORD, TERMS,
+    FIRST_NAME, LAST_NAME, BIRTH_DATE, USERNAME, EMAIL, PHONE, PASSWORD, CONFIRM_PASSWORD, TERMS,
     POSITION, SPECIALTY, EXPERIENCE, ROLE,
 }
 
@@ -31,11 +35,13 @@ data class RegistrationUiState(
     val errors: Map<RegistrationField, Int> = emptyMap(),
     val isSubmitting: Boolean = false,
     val submitErrorRes: Int? = null,
+    val submitErrorMessage: String? = null,
     val registeredUser: User? = null,
 )
 
 class RegistrationViewModel(
     private val authRepository: AuthRepository,
+    private val iamRepository: IamRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RegistrationUiState())
@@ -83,7 +89,7 @@ class RegistrationViewModel(
     }
 
     fun clearSubmitError() {
-        _uiState.update { it.copy(submitErrorRes = null) }
+        _uiState.update { it.copy(submitErrorRes = null, submitErrorMessage = null) }
     }
 
     private fun goTo(step: RegistrationStep) {
@@ -92,25 +98,56 @@ class RegistrationViewModel(
 
     private fun submit() {
         if (_uiState.value.isSubmitting) return
+        val draft = _uiState.value.draft
         viewModelScope.launch {
-            _uiState.update { it.copy(isSubmitting = true, submitErrorRes = null) }
-            authRepository.register(_uiState.value.draft).fold(
-                onSuccess = { user ->
-                    authRepository.saveUserProfile(user)
-                    authRepository.saveToken(
-                        Token(accessToken = "mock-access-${user.id}", refreshToken = "mock-refresh-${user.id}"),
-                    )
-                    _uiState.update {
-                        it.copy(isSubmitting = false, registeredUser = user, step = RegistrationStep.DONE)
-                    }
+            _uiState.update { it.copy(isSubmitting = true, submitErrorRes = null, submitErrorMessage = null) }
+            iamRepository.signUp(draft).fold(
+                onSuccess = {
+                    completeRegistrationAfterSignUp(draft)
                 },
-                onFailure = {
+                onFailure = { error ->
                     _uiState.update {
-                        it.copy(isSubmitting = false, submitErrorRes = R.string.reg_error_submit)
+                        it.copy(
+                            isSubmitting = false,
+                            submitErrorRes = R.string.reg_error_submit,
+                            submitErrorMessage = error.message?.takeIf { msg -> msg.isNotBlank() },
+                        )
                     }
                 },
             )
         }
+    }
+
+    private suspend fun completeRegistrationAfterSignUp(draft: RegistrationDraft) {
+        val username = draft.resolvedUsername()
+        val registrationEmail = draft.email.trim()
+        iamRepository.login(username, draft.password, knownEmail = registrationEmail).fold(
+            onSuccess = { session ->
+                val user = session.user.withCorporateEmail(registrationEmail)
+                authRepository.saveUserProfile(user)
+                authRepository.saveToken(
+                    Token(accessToken = session.accessToken, refreshToken = session.accessToken),
+                )
+                _uiState.update {
+                    it.copy(
+                        isSubmitting = false,
+                        registeredUser = user,
+                        step = RegistrationStep.DONE,
+                    )
+                }
+            },
+            onFailure = {
+                val user = draft.toRegisteredUser()
+                authRepository.saveUserProfile(user)
+                _uiState.update {
+                    it.copy(
+                        isSubmitting = false,
+                        registeredUser = user,
+                        step = RegistrationStep.DONE,
+                    )
+                }
+            },
+        )
     }
 
     private fun validate(step: RegistrationStep, d: RegistrationDraft): Map<RegistrationField, Int> {
@@ -122,6 +159,9 @@ class RegistrationViewModel(
                 if (!isValidBirthDate(d)) errors[RegistrationField.BIRTH_DATE] = R.string.reg_error_birth_date
             }
             RegistrationStep.CONTACT -> {
+                if (!UsernamePolicy.isValid(d.resolvedUsername())) {
+                    errors[RegistrationField.USERNAME] = R.string.reg_error_username
+                }
                 if (!EmailPolicy.isValid(d.email)) errors[RegistrationField.EMAIL] = R.string.reg_error_email
                 if (d.phone.count { it.isDigit() } < 7) errors[RegistrationField.PHONE] = R.string.reg_error_phone
                 if (!PasswordPolicy.isAcceptable(d.password)) {
@@ -156,11 +196,14 @@ class RegistrationViewModel(
     }
 
     companion object {
-        fun factory(authRepository: AuthRepository): ViewModelProvider.Factory =
+        fun factory(
+            authRepository: AuthRepository,
+            iamRepository: IamRepository,
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    RegistrationViewModel(authRepository) as T
+                    RegistrationViewModel(authRepository, iamRepository) as T
             }
     }
 }

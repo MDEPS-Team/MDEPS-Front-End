@@ -16,6 +16,7 @@ data class RegistrationDraft(
     val birthMonth: String = "",
     val birthYear: String = "",
     val salutation: Salutation = Salutation.UNSPECIFIED,
+    val username: String = "",
     val email: String = "",
     val phone: String = "",
     val password: String = "",
@@ -27,6 +28,19 @@ data class RegistrationDraft(
     val role: PmoRole? = null,
 ) {
     val fullName: String get() = "${firstName.trim()} ${lastName.trim()}".trim()
+
+    /** Username sent to the API; falls back to the email local-part when empty. */
+    fun resolvedUsername(): String {
+        val explicit = username.trim()
+        if (explicit.isNotEmpty()) return explicit
+        return email.trim().substringBefore("@").trim()
+    }
+}
+
+object UsernamePolicy {
+    private val USERNAME_REGEX = Regex("^[A-Za-z0-9._-]{3,32}$")
+
+    fun isValid(username: String): Boolean = USERNAME_REGEX.matches(username.trim())
 }
 
 object PasswordPolicy {

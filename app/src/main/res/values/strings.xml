@@ -11,6 +11,7 @@
     <string name="iam_login_title">Vantage PMO</string>
     <string name="iam_login_subtitle">Project Management Office</string>
     <string name="iam_login_corporate_email_label">Corporate email</string>
+    <string name="iam_login_username_label">Username</string>
     <string name="iam_login_password_label">Password</string>
     <string name="iam_login_sign_in">Sign In</string>
 
@@ -18,6 +19,7 @@
     <string name="iam_a11y_email_icon">Corporate email field icon</string>
     <string name="iam_a11y_password_icon">Password field icon</string>
     <string name="iam_a11y_corporate_email_field">Corporate email input</string>
+    <string name="iam_a11y_username_field">Username input</string>
     <string name="iam_a11y_password_field">Password input, characters hidden</string>
     <string name="iam_a11y_sign_in_button">Sign in to your account</string>
 
@@ -83,6 +85,10 @@
     <string name="iam_profile_save">Save profile changes</string>
     <string name="iam_profile_saved">Profile preferences saved</string>
     <string name="iam_profile_logout">Log out of active session</string>
+    <string name="iam_profile_username_label">Username</string>
+    <string name="iam_profile_username_handle">@%1$s</string>
+    <string name="iam_profile_role_fallback">PMO member</string>
+    <string name="iam_profile_email_unavailable">No corporate email on file</string>
     <string name="profile_preferences_title">Preferences</string>
     <string name="profile_preferences_subtitle">Choose the language used across Vantage PMO.</string>
     <string name="profile_language_en">English (EN)</string>
@@ -579,6 +585,8 @@
     <string name="reg_cta_to_contact">Continue to contact</string>
     <string name="reg_contact_heading">Contact information</string>
     <string name="reg_sso_link">Link Google Workspace · Use SSO</string>
+    <string name="reg_username">Username</string>
+    <string name="reg_username_placeholder">alex.vance (optional)</string>
     <string name="reg_email">Corporate email</string>
     <string name="reg_phone">Mobile phone</string>
     <string name="reg_password">Access password</string>
@@ -623,6 +631,7 @@
     <string name="reg_cta_enter">Enter my workspace</string>
     <string name="reg_error_required">This field is required</string>
     <string name="reg_error_birth_date">Enter a valid date (you must be over 16)</string>
+    <string name="reg_error_username">Enter a username (3–32 letters, numbers, . _ -) or use a valid email</string>
     <string name="reg_error_email">Enter a valid corporate email</string>
     <string name="reg_error_phone">Enter a valid phone number</string>
     <string name="reg_error_password_weak">Use at least 8 characters mixing letters, numbers and symbols</string>

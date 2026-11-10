@@ -55,7 +55,10 @@ import com.example.mdeps_application.gro.ui.MilestoneTimelineScreen
 import com.example.mdeps_application.gro.ui.RiskMatrixScreen
 import com.example.mdeps_application.iam.application.IamViewModel
 import com.example.mdeps_application.pm.application.ProfileViewModel
+import com.example.mdeps_application.core.network.RetrofitClient
 import com.example.mdeps_application.iam.data.DataStoreAuthRepository
+import com.example.mdeps_application.iam.data.remote.IamApiService
+import com.example.mdeps_application.iam.data.repository.IamRepositoryImpl
 import com.example.mdeps_application.pm.data.DataStoreProfileRepository
 import com.example.mdeps_application.iam.data.iamAuthDataStore
 import com.example.mdeps_application.pm.data.profileDataStore
@@ -154,7 +157,12 @@ fun VantagePmoApp() {
     MDEPS_APPLICATIONTheme(darkTheme = darkStudio) {
         if (!sessionUnlocked) {
             val authRepository = remember { DataStoreAuthRepository(context.iamAuthDataStore) }
-            val iamViewModel: IamViewModel = viewModel(factory = IamViewModel.factory(authRepository))
+            val iamRepository = remember {
+                IamRepositoryImpl(RetrofitClient.createService(IamApiService::class.java))
+            }
+            val iamViewModel: IamViewModel = viewModel(
+                factory = IamViewModel.factory(authRepository, iamRepository),
+            )
             val iamState by iamViewModel.uiState.collectAsStateWithLifecycle()
             var enteringFromRecovery by remember { mutableStateOf(false) }
             LaunchedEffect(iamState.isAuthenticated, enteringFromRecovery) {
@@ -193,7 +201,7 @@ fun VantagePmoApp() {
                     AuthRoute.Register -> {
                         val registrationViewModel: RegistrationViewModel = viewModel(
                             key = "registration_$flowNonce",
-                            factory = RegistrationViewModel.factory(authRepository),
+                            factory = RegistrationViewModel.factory(authRepository, iamRepository),
                         )
                         RegisterFlowScreen(
                             viewModel = registrationViewModel,
@@ -237,7 +245,12 @@ private fun MainShell(onLogout: () -> Unit) {
     val context = LocalContext.current
 
     val authRepository = remember { DataStoreAuthRepository(context.iamAuthDataStore) }
-    val iamViewModel: IamViewModel = viewModel(factory = IamViewModel.factory(authRepository))
+    val iamRepository = remember {
+        IamRepositoryImpl(RetrofitClient.createService(IamApiService::class.java))
+    }
+    val iamViewModel: IamViewModel = viewModel(
+        factory = IamViewModel.factory(authRepository, iamRepository),
+    )
 
     val ptoRepository = remember {
         OfflineFirstProjectRepository(PtoDatabase.create(context.applicationContext).projectDao())
