@@ -2,6 +2,7 @@
 
 package com.example.mdeps_application.gro.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Bolt
@@ -33,12 +35,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,6 +63,7 @@ import com.example.mdeps_application.gro.application.GovernanceBandwidthRow
 import com.example.mdeps_application.gro.application.GovernanceEscalation
 import com.example.mdeps_application.gro.application.GovernanceHubEvent
 import com.example.mdeps_application.gro.application.GovernanceHubViewModel
+import com.example.mdeps_application.gro.domain.RiskHeatmapCell
 import com.example.mdeps_application.ui.Caption
 import com.example.mdeps_application.ui.LocalAppSnackbarHostState
 import com.example.mdeps_application.ui.Pill
@@ -70,6 +80,16 @@ fun GovernanceHubScreen(
     onProfile: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val syncError by viewModel.syncError.collectAsStateWithLifecycle()
+    val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
+    val snackbar = LocalAppSnackbarHostState.current
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(syncError) {
+        val message = syncError ?: return@LaunchedEffect
+        snackbar?.showSnackbar(message)
+        viewModel.clearSyncError()
+    }
     CollectGovernanceHubEvents(viewModel)
 
     Scaffold(
@@ -99,10 +119,23 @@ fun GovernanceHubScreen(
             )
         },
     ) { innerPadding ->
-        LazyColumn(
+        val scope = rememberCoroutineScope()
+        PullToRefreshBox(
+            isRefreshing = isRefreshing || isSyncing,
+            onRefresh = {
+                scope.launch {
+                    isRefreshing = true
+                    viewModel.refreshRemoteInsights()
+                    delay(400)
+                    isRefreshing = false
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
+        ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -134,6 +167,24 @@ fun GovernanceHubScreen(
                 }
             }
             item { ComplianceHeroCard(state.compliancePercent, state.complianceDelta, state.criticalViolations) }
+            if (state.metricsFromServer) {
+                item {
+                    Caption(
+                        text = stringResource(R.string.iam_profile_kpis_from_server),
+                        color = Vx.Green,
+                    )
+                }
+            }
+            if (state.riskMatrixCells.isNotEmpty()) {
+                item {
+                    RiskHeatmapCard(
+                        segment = state.riskMatrixSegment.orEmpty(),
+                        environment = state.riskMatrixEnvironment.orEmpty(),
+                        cells = state.riskMatrixCells,
+                        fromServer = state.riskMatrixFromServer,
+                    )
+                }
+            }
             item { FrameworkCards(state.policies.soc2Enabled, state.criticalViolations) }
             item {
                 ProtocolCard(
@@ -213,6 +264,7 @@ fun GovernanceHubScreen(
                     )
                 }
             }
+        }
         }
     }
 }
@@ -464,4 +516,91 @@ private fun EscalationCard(
             }
         }
     }
+}
+
+private val RiskHeatmapLikelihoods = listOf("REMOTE", "UNLIKELY", "POSSIBLE", "PROBABLE", "CERTAIN")
+private val RiskHeatmapImpacts = listOf("HIGH", "MEDIUM", "LOW")
+
+@Composable
+private fun RiskHeatmapCard(
+    segment: String,
+    environment: String,
+    cells: List<RiskHeatmapCell>,
+    fromServer: Boolean,
+) {
+    VxCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Warning, contentDescription = null, tint = Vx.Blue)
+                Text(
+                    text = stringResource(R.string.gro_risk_matrix_title),
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+            if (segment.isNotBlank() || environment.isNotBlank()) {
+                Text(
+                    text = stringResource(R.string.gro_risk_matrix_meta, segment, environment),
+                    fontSize = 12.sp,
+                    color = Vx.Muted,
+                )
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                Spacer(Modifier.width(40.dp))
+                RiskHeatmapLikelihoods.forEach { likelihood ->
+                    Text(
+                        text = likelihood.take(3),
+                        fontSize = 8.sp,
+                        color = Vx.Muted,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            RiskHeatmapImpacts.forEach { impact ->
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = impact.take(3),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.width(40.dp),
+                    )
+                    RiskHeatmapLikelihoods.forEach { likelihood ->
+                        val cell = cells.firstOrNull {
+                            it.impact.equals(impact, ignoreCase = true) &&
+                                it.likelihood.equals(likelihood, ignoreCase = true)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(32.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(heatmapColor(cell?.level)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = cell?.value?.toString() ?: "—",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Vx.Ink,
+                            )
+                        }
+                    }
+                }
+            }
+            if (fromServer) {
+                Caption(text = stringResource(R.string.iam_profile_kpis_from_server), color = Vx.Green)
+            }
+        }
+    }
+}
+
+private fun heatmapColor(level: String?): Color = when (level.orEmpty().lowercase()) {
+    "critical" -> Color(0xFFEF9A9A)
+    "high" -> Color(0xFFFFCC80)
+    "medium" -> Color(0xFFFFF59D)
+    else -> Color(0xFFC8E6C9)
 }

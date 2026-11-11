@@ -35,8 +35,10 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.filled.Summarize
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Button
@@ -44,6 +46,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -56,9 +59,9 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -76,8 +79,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mdeps_application.R
+import com.example.mdeps_application.pm.application.ProfileEvent
 import com.example.mdeps_application.pm.application.ProfileViewModel
-import kotlinx.coroutines.launch
 import com.example.mdeps_application.pm.domain.ProfileDigestFrequency
 import com.example.mdeps_application.pm.domain.ProfileMethodology
 import com.example.mdeps_application.ui.Caption
@@ -96,12 +99,12 @@ fun ProfileScreen(
     viewModel: ProfileViewModel,
     onLogout: () -> Unit,
     onOpenAuditTrail: () -> Unit,
+    onOpenSupport: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val user = state.user
     val context = LocalContext.current
     val snackbar = LocalAppSnackbarHostState.current
-    val scope = rememberCoroutineScope()
     var showSecuritySheet by rememberSaveable { mutableStateOf(false) }
 
     val fallbackName = stringResource(R.string.home_greeting_fallback_name)
@@ -120,6 +123,31 @@ fun ProfileScreen(
     ) { uri ->
         if (uri != null) {
             viewModel.saveProfileAvatar(context.contentResolver, uri)
+        }
+    }
+
+    LaunchedEffect(state.sessionActive, user?.email) {
+        if (state.sessionActive && user != null) {
+            viewModel.refreshFromBackend()
+        }
+    }
+
+    val profileSyncError = state.profileSyncError
+    LaunchedEffect(profileSyncError) {
+        val message = profileSyncError ?: return@LaunchedEffect
+        snackbar?.showSnackbar(message)
+        viewModel.clearProfileSyncError()
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                ProfileEvent.Saved -> {
+                    showSecuritySheet = false
+                    snackbar?.showSnackbar(context.getString(R.string.iam_profile_saved))
+                }
+                ProfileEvent.SignedOut -> Unit
+            }
         }
     }
 
@@ -209,13 +237,24 @@ fun ProfileScreen(
                 methodology = state.operational.methodology,
                 digest = state.operational.digest,
                 darkStudio = state.operational.darkStudioTheme,
+                notificationsEnabled = state.operational.notificationsEnabled,
                 onTimezone = viewModel::setTimezone,
                 onMethodology = viewModel::setMethodology,
                 onDigest = viewModel::setDigest,
                 onDarkStudio = viewModel::setDarkStudio,
+                onNotifications = viewModel::setNotificationsEnabled,
             )
 
-            ProfileLanguagePreferenceSection()
+            ProfileLanguagePreferenceSection(onLanguageSelected = viewModel::onLanguageSelected)
+
+            if (state.settingsFromServer) {
+                Text(
+                    text = stringResource(R.string.iam_profile_kpis_from_server),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Vx.Green,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
 
             AccessGovernanceCard(
                 masterRole = displayRole,
@@ -224,13 +263,19 @@ fun ProfileScreen(
                 onOpenAudit = onOpenAuditTrail,
             )
 
+            OutlinedButton(
+                onClick = onOpenSupport,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Default.SupportAgent, contentDescription = null)
+                Text(
+                    stringResource(R.string.support_center_open),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+
             Button(
-                onClick = {
-                    viewModel.saveProfile()
-                    scope.launch {
-                        snackbar?.showSnackbar(context.getString(R.string.iam_profile_saved))
-                    }
-                },
+                onClick = { viewModel.saveProfile() },
                 enabled = !state.isSaving,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Vx.Blue),
@@ -266,8 +311,10 @@ fun ProfileScreen(
     if (showSecuritySheet) {
         SecuritySheet(
             corporateEmail = state.draftEmail.ifBlank { user?.email.orEmpty() },
+            isSaving = state.isSaving,
             onDismiss = { showSecuritySheet = false },
             onEmailChange = viewModel::setDraftEmail,
+            onSaveEmail = { viewModel.saveProfile() },
         )
     }
 }
@@ -511,10 +558,12 @@ private fun PmoPreferencesSection(
     methodology: ProfileMethodology,
     digest: ProfileDigestFrequency,
     darkStudio: Boolean,
+    notificationsEnabled: Boolean,
     onTimezone: (String) -> Unit,
     onMethodology: (ProfileMethodology) -> Unit,
     onDigest: (ProfileDigestFrequency) -> Unit,
     onDarkStudio: (Boolean) -> Unit,
+    onNotifications: (Boolean) -> Unit,
 ) {
     val timezoneOptions = listOf(
         "utc_plus_1" to stringResource(R.string.iam_profile_tz_madrid),
@@ -596,6 +645,19 @@ private fun PmoPreferencesSection(
                 Switch(
                     checked = darkStudio,
                     onCheckedChange = onDarkStudio,
+                    colors = SwitchDefaults.colors(checkedTrackColor = Vx.Blue),
+                )
+            }
+
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Notifications, contentDescription = null, tint = Vx.Blue)
+                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                    Text(stringResource(R.string.iam_profile_notifications), fontWeight = FontWeight.SemiBold, color = Vx.Ink)
+                    Text(stringResource(R.string.iam_profile_notifications_sub), fontSize = 12.sp, color = Vx.Muted)
+                }
+                Switch(
+                    checked = notificationsEnabled,
+                    onCheckedChange = onNotifications,
                     colors = SwitchDefaults.colors(checkedTrackColor = Vx.Blue),
                 )
             }

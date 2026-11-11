@@ -30,6 +30,7 @@ class DataStoreProfileRepository(
                     else -> ProfileDigestFrequency.DAILY
                 },
                 darkStudioTheme = prefs[KEY_DARK_STUDIO] ?: false,
+                notificationsEnabled = prefs[KEY_NOTIFICATIONS] ?: true,
                 workspace = ProfileWorkspacePrefs(
                     organization = prefs[KEY_ORG] ?: "Enterprise Solutions Global",
                     location = prefs[KEY_LOCATION] ?: "Madrid HQ",
@@ -55,6 +56,7 @@ class DataStoreProfileRepository(
                 ProfileDigestFrequency.DAILY -> "daily"
             }
             editor[KEY_DARK_STUDIO] = prefs.darkStudioTheme
+            editor[KEY_NOTIFICATIONS] = prefs.notificationsEnabled
             editor[KEY_ORG] = prefs.workspace.organization
             editor[KEY_LOCATION] = prefs.workspace.location
             editor[KEY_FLOOR] = prefs.workspace.floorLabel
@@ -66,6 +68,7 @@ class DataStoreProfileRepository(
         val KEY_METHODOLOGY = stringPreferencesKey("profile_methodology")
         val KEY_DIGEST = stringPreferencesKey("profile_digest")
         val KEY_DARK_STUDIO = booleanPreferencesKey("profile_dark_studio")
+        val KEY_NOTIFICATIONS = booleanPreferencesKey("profile_notifications_enabled")
         val KEY_ORG = stringPreferencesKey("profile_org")
         val KEY_LOCATION = stringPreferencesKey("profile_location")
         val KEY_FLOOR = stringPreferencesKey("profile_floor")

@@ -69,6 +69,10 @@ import com.example.mdeps_application.R
 import com.example.mdeps_application.ass.application.ProjectRiskAlert
 import com.example.mdeps_application.gro.ui.localizedTitle
 import com.example.mdeps_application.pto.application.UpcomingMilestone
+import com.example.mdeps_application.pto.domain.AgendaEntryKind
+import com.example.mdeps_application.pto.domain.PortfolioAgendaEntry
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import com.example.mdeps_application.ui.Vx
 import com.example.mdeps_application.ui.VxMotion
 import com.example.mdeps_application.ui.pressScale
@@ -608,6 +612,151 @@ fun GovernanceAgenda(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun PortfolioAgenda(
+    items: List<PortfolioAgendaEntry>,
+    onOpenProject: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val locale = Locale.getDefault()
+    val formatter = remember(locale) {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+    }
+    val today = remember { LocalDate.now() }
+    Column(
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Vx.Surface)
+            .border(1.dp, Vx.Line, RoundedCornerShape(20.dp))
+            .padding(vertical = 6.dp),
+    ) {
+        items.forEachIndexed { index, item ->
+            val date = Instant.ofEpochMilli(item.whenMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+            val overdue = date.isBefore(today)
+            val dotColor = when (item.kind) {
+                AgendaEntryKind.MEETING -> Vx.Blue
+                AgendaEntryKind.SCHEDULE -> Vx.Teal
+                AgendaEntryKind.MILESTONE -> when {
+                    overdue -> Vx.Red
+                    index == 0 -> VxAccent
+                    else -> Vx.Gray
+                }
+            }
+            val clickable = item.projectId != null
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .then(
+                        if (clickable) {
+                            Modifier.clickable { onOpenProject(item.projectId!!) }
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .padding(horizontal = 16.dp),
+            ) {
+                Column(Modifier.width(14.dp).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        Modifier
+                            .width(2.dp)
+                            .height(14.dp)
+                            .background(if (index == 0) Color.Transparent else Vx.Line),
+                    )
+                    Box(
+                        Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(dotColor),
+                    )
+                    Box(
+                        Modifier
+                            .width(2.dp)
+                            .weight(1f)
+                            .background(if (index == items.lastIndex) Color.Transparent else Vx.Line),
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f).padding(vertical = 10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (overdue) {
+                                stringResource(R.string.home_agenda_overdue, date.format(formatter))
+                            } else {
+                                date.format(formatter)
+                            },
+                            modifier = Modifier.weight(1f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (overdue) Vx.Red else VxAccent,
+                        )
+                        val kindLabel = when (item.kind) {
+                            AgendaEntryKind.MEETING -> stringResource(R.string.home_agenda_kind_meeting)
+                            AgendaEntryKind.SCHEDULE -> stringResource(R.string.home_agenda_kind_schedule)
+                            AgendaEntryKind.MILESTONE -> stringResource(R.string.home_agenda_kind_milestone)
+                        }
+                        Text(
+                            kindLabel,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Vx.Chip)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Vx.Muted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Text(
+                        item.title,
+                        modifier = Modifier.padding(top = 3.dp),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Vx.Ink,
+                    )
+                    if (item.subtitle.isNotBlank()) {
+                        Text(
+                            item.subtitle,
+                            fontSize = 12.sp,
+                            color = Vx.Muted,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeAgendaActions(
+    onSync: () -> Unit,
+    onCreateCheckIn: () -> Unit,
+    onScheduleMeeting: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(onClick = onSync, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.home_agenda_sync))
+            }
+            TextButton(onClick = onCreateCheckIn, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.home_agenda_create))
+            }
+        }
+        OutlinedButton(onClick = onScheduleMeeting, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.home_agenda_meeting))
         }
     }
 }

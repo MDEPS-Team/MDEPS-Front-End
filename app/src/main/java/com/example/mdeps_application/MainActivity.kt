@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -49,18 +50,24 @@ import com.example.mdeps_application.ass.application.AnalyticsViewModel
 import com.example.mdeps_application.ass.ui.AnalyticsScreen
 import com.example.mdeps_application.gro.application.GroViewModel
 import com.example.mdeps_application.gro.data.OfflineFirstMilestoneRepository
+import com.example.mdeps_application.ass.data.repository.InsightsRepositoryImpl
 import com.example.mdeps_application.gro.data.OfflineFirstRiskRepository
+import com.example.mdeps_application.gro.data.repository.ApiBackedRiskRepository
 import com.example.mdeps_application.gro.data.local.GroDatabase
 import com.example.mdeps_application.gro.ui.MilestoneTimelineScreen
 import com.example.mdeps_application.gro.ui.RiskMatrixScreen
 import com.example.mdeps_application.iam.application.IamViewModel
 import com.example.mdeps_application.pm.application.ProfileViewModel
-import com.example.mdeps_application.core.network.RetrofitClient
-import com.example.mdeps_application.iam.data.DataStoreAuthRepository
-import com.example.mdeps_application.iam.data.remote.IamApiService
+import com.example.mdeps_application.pm.application.SupportCenterViewModel
+import com.example.mdeps_application.pm.data.repository.SupportRepositoryImpl
+import com.example.mdeps_application.pm.ui.SupportCenterSheet
+import com.example.mdeps_application.core.network.NetworkServices
+import com.example.mdeps_application.core.network.SessionUnauthorizedNotifier
+import com.example.mdeps_application.iam.data.dataStoreAuthRepository
 import com.example.mdeps_application.iam.data.repository.IamRepositoryImpl
 import com.example.mdeps_application.pm.data.DataStoreProfileRepository
-import com.example.mdeps_application.iam.data.iamAuthDataStore
+import com.example.mdeps_application.pm.data.repository.UserProfileRepositoryImpl
+import com.example.mdeps_application.pm.data.repository.UserSettingsRepositoryImpl
 import com.example.mdeps_application.pm.data.profileDataStore
 import com.example.mdeps_application.iam.ui.LoginScreen
 import com.example.mdeps_application.iam.ui.PasswordRecoveryScreen
@@ -78,6 +85,9 @@ import androidx.compose.animation.togetherWith
 import com.example.mdeps_application.pm.ui.ProfileScreen
 import com.example.mdeps_application.pto.application.PtoViewModel
 import com.example.mdeps_application.pto.data.OfflineFirstProjectRepository
+import com.example.mdeps_application.pto.data.ProjectBoardRegistry
+import com.example.mdeps_application.pto.data.repository.AgendaRepositoryImpl
+import com.example.mdeps_application.pto.data.repository.ApiBackedProjectRepository
 import com.example.mdeps_application.pto.data.local.PtoDatabase
 import com.example.mdeps_application.pto.ui.HomeScreen
 import com.example.mdeps_application.pto.ui.ProjectDetailScreen
@@ -156,10 +166,8 @@ fun VantagePmoApp() {
 
     MDEPS_APPLICATIONTheme(darkTheme = darkStudio) {
         if (!sessionUnlocked) {
-            val authRepository = remember { DataStoreAuthRepository(context.iamAuthDataStore) }
-            val iamRepository = remember {
-                IamRepositoryImpl(RetrofitClient.createService(IamApiService::class.java))
-            }
+            val authRepository = remember { context.dataStoreAuthRepository() }
+            val iamRepository = remember { IamRepositoryImpl(NetworkServices.iam) }
             val iamViewModel: IamViewModel = viewModel(
                 factory = IamViewModel.factory(authRepository, iamRepository),
             )
@@ -232,39 +240,63 @@ fun VantagePmoApp() {
                     authRoute = AuthRoute.Login
                     sessionUnlocked = false
                 },
+                onSessionExpired = {
+                    authRoute = AuthRoute.Login
+                    sessionUnlocked = false
+                },
             )
         }
     }
 }
 
 @Composable
-private fun MainShell(onLogout: () -> Unit) {
+private fun MainShell(
+    onLogout: () -> Unit,
+    onSessionExpired: () -> Unit = onLogout,
+) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val destination = entry?.destination
     val context = LocalContext.current
 
-    val authRepository = remember { DataStoreAuthRepository(context.iamAuthDataStore) }
-    val iamRepository = remember {
-        IamRepositoryImpl(RetrofitClient.createService(IamApiService::class.java))
-    }
+    val authRepository = remember { context.dataStoreAuthRepository() }
+    val iamRepository = remember { IamRepositoryImpl(NetworkServices.iam) }
     val iamViewModel: IamViewModel = viewModel(
         factory = IamViewModel.factory(authRepository, iamRepository),
     )
 
+    val ptoDao = remember { PtoDatabase.create(context.applicationContext).projectDao() }
+    val projectBoardRegistry = remember { ProjectBoardRegistry() }
     val ptoRepository = remember {
-        OfflineFirstProjectRepository(PtoDatabase.create(context.applicationContext).projectDao())
+        ApiBackedProjectRepository(
+            local = OfflineFirstProjectRepository(ptoDao),
+            api = NetworkServices.pto,
+            authRepository = authRepository,
+            boardRegistry = projectBoardRegistry,
+        )
     }
     val groDatabase = remember {
         GroDatabase.create(context.applicationContext)
     }
-    val riskRepository = remember { OfflineFirstRiskRepository(groDatabase.riskDao()) }
+    val riskRepository = remember {
+        ApiBackedRiskRepository(
+            local = OfflineFirstRiskRepository(groDatabase.riskDao()),
+            api = NetworkServices.gro,
+            projectRepository = ptoRepository,
+        )
+    }
+    val insightsRepository = remember {
+        InsightsRepositoryImpl(NetworkServices.ass, NetworkServices.pto)
+    }
     val milestoneRepository = remember { OfflineFirstMilestoneRepository(groDatabase.milestoneDao()) }
+    val agendaRepository = remember { AgendaRepositoryImpl(NetworkServices.agenda) }
     val ptoViewModel: PtoViewModel = viewModel(
         factory = PtoViewModel.factory(
             projectRepository = ptoRepository,
             riskRepository = riskRepository,
             milestoneRepository = milestoneRepository,
+            agendaRepository = agendaRepository,
+            authRepository = authRepository,
         ),
     )
     val kanbanViewModel: KanbanViewModel = viewModel(factory = KanbanViewModel.factory(ptoRepository))
@@ -280,6 +312,7 @@ private fun MainShell(onLogout: () -> Unit) {
             projectRepository = ptoRepository,
             riskRepository = riskRepository,
             milestoneRepository = milestoneRepository,
+            insightsRepository = insightsRepository,
         ),
     )
     val governancePreferencesStore = remember { GovernancePreferencesStore(context.governanceDataStore) }
@@ -289,19 +322,36 @@ private fun MainShell(onLogout: () -> Unit) {
             projectRepository = ptoRepository,
             riskRepository = riskRepository,
             milestoneRepository = milestoneRepository,
+            insightsRepository = insightsRepository,
         ),
     )
     val profileRepository = remember { DataStoreProfileRepository(context.profileDataStore) }
+    val userProfileRepository = remember { UserProfileRepositoryImpl(NetworkServices.pm) }
+    val userSettingsRepository = remember { UserSettingsRepositoryImpl(NetworkServices.pm) }
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModel.factory(
             authRepository = authRepository,
+            userProfileRepository = userProfileRepository,
             profileRepository = profileRepository,
             projectRepository = ptoRepository,
             riskRepository = riskRepository,
             milestoneRepository = milestoneRepository,
             governancePreferencesStore = governancePreferencesStore,
+            userSettingsRepository = userSettingsRepository,
         ),
     )
+
+    LaunchedEffect(Unit) {
+        profileViewModel.refreshFromBackend()
+        delay(800)
+        ptoViewModel.refreshRemoteAgenda()
+    }
+
+    val supportRepository = remember { SupportRepositoryImpl(NetworkServices.support) }
+    val supportCenterViewModel: SupportCenterViewModel = viewModel(
+        factory = SupportCenterViewModel.factory(supportRepository),
+    )
+    var showSupportCenter by remember { mutableStateOf(false) }
 
     val onProjectFlow = destination?.route?.startsWith("project_details") == true
     val onGroFlow = destination?.route?.startsWith("gro_") == true
@@ -321,6 +371,16 @@ private fun MainShell(onLogout: () -> Unit) {
         .collectAsStateWithLifecycle(initialValue = null)
     var onboardingStep by rememberSaveable { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
+    val sessionExpiredMessage = stringResource(R.string.iam_session_expired)
+
+    LaunchedEffect(Unit) {
+        SessionUnauthorizedNotifier.events.collect {
+            authRepository.clearSession()
+            iamViewModel.endActiveSession()
+            snackbarHostState.showSnackbar(sessionExpiredMessage)
+            onSessionExpired()
+        }
+    }
 
     CompositionLocalProvider(LocalAppSnackbarHostState provides snackbarHostState) {
         Scaffold(
@@ -353,6 +413,10 @@ private fun MainShell(onLogout: () -> Unit) {
         },
     ) { inner ->
         val goProfile = { nav.navigateTab(Tab.Profile.route) }
+        val openSupportCenter = {
+            showSupportCenter = true
+            supportCenterViewModel.refresh()
+        }
         val iamState by iamViewModel.uiState.collectAsStateWithLifecycle()
         val analyticsState by analyticsViewModel.uiState.collectAsStateWithLifecycle()
         val riskCountByProject = analyticsState.projectsWithHighRisks.associate {
@@ -369,6 +433,7 @@ private fun MainShell(onLogout: () -> Unit) {
                 HomeScreen(
                     viewModel = ptoViewModel,
                     analyticsViewModel = analyticsViewModel,
+                    riskCountByProject = riskCountByProject,
                     userDisplayName = displayName,
                     userRole = iamState.user?.role,
                     onProjectClick = openProject,
@@ -386,6 +451,7 @@ private fun MainShell(onLogout: () -> Unit) {
                     },
                     onOpenKanban = { nav.navigate(kanbanRoute()) { launchSingleTop = true } },
                     onProfile = goProfile,
+                    onOpenSupport = openSupportCenter,
                 )
             }
             composable(Tab.Projects.route) {
@@ -476,6 +542,7 @@ private fun MainShell(onLogout: () -> Unit) {
                     viewModel = profileViewModel,
                     onLogout = endSession,
                     onOpenAuditTrail = { nav.navigateTab(Tab.Governance.route) },
+                    onOpenSupport = openSupportCenter,
                 )
             }
             composable(ROUTE_CREATE) {
@@ -572,6 +639,12 @@ private fun MainShell(onLogout: () -> Unit) {
             }
         }
     }
+
+        SupportCenterSheet(
+            visible = showSupportCenter,
+            viewModel = supportCenterViewModel,
+            onDismiss = { showSupportCenter = false },
+        )
 
         if (onboardingCompleted == false) {
             OnboardingDialog(

@@ -11,6 +11,8 @@
     <string name="iam_login_title">Vantage PMO</string>
     <string name="iam_login_subtitle">Project Management Office</string>
     <string name="iam_login_corporate_email_label">Corporate email</string>
+    <string name="iam_session_expired">Your session has expired. Sign in again.</string>
+    <string name="iam_profile_kpis_from_server">Synced with server</string>
     <string name="iam_login_username_label">Username</string>
     <string name="iam_login_password_label">Password</string>
     <string name="iam_login_sign_in">Sign In</string>
@@ -75,6 +77,10 @@
     <string name="iam_profile_digest_weekly">Weekly</string>
     <string name="iam_profile_dark_studio">Dark studio theme</string>
     <string name="iam_profile_dark_studio_sub">High-contrast UI for executive review</string>
+    <string name="iam_profile_notifications">Push notifications</string>
+    <string name="iam_profile_notifications_sub">Synced with server user-settings</string>
+    <string name="gro_risk_matrix_title">Enterprise risk heatmap</string>
+    <string name="gro_risk_matrix_meta">%1$s · %2$s</string>
     <string name="iam_profile_access_title">Access &amp; governance tier</string>
     <string name="iam_profile_tier_badge">Tier 1</string>
     <string name="iam_profile_master_role">Project leader &amp; enterprise admin</string>
@@ -107,6 +113,8 @@
     <!-- IAM Security sheet -->
     <string name="iam_security_sheet_title">Security Settings</string>
     <string name="iam_security_change_email">Change corporate email</string>
+    <string name="iam_security_save_email">Save email to server</string>
+    <string name="iam_security_email_hint">Saves via PATCH /users/{id} (MySQL users + profiles). Sign out/in only if email does not refresh.</string>
     <string name="iam_security_view_id">View employee ID</string>
     <string name="iam_security_change_2fa">Change two-factor authentication</string>
     <string name="iam_security_employee_id_label">Employee ID</string>
@@ -747,7 +755,34 @@
     <string name="home_agenda_count">%1$d open</string>
     <string name="home_agenda_overdue">Overdue · %1$s</string>
     <string name="home_agenda_empty_title">Agenda clear</string>
-    <string name="home_agenda_empty_desc">No pending milestones. Register one from Governance.</string>
+    <string name="home_agenda_empty_desc">No local milestones or server meetings yet.</string>
+    <string name="home_agenda_sync">Sync agenda</string>
+    <string name="home_agenda_create">Save check-in</string>
+    <string name="home_agenda_default_event">PMO portfolio check-in</string>
+    <string name="home_agenda_kind_meeting">Meeting</string>
+    <string name="home_agenda_kind_schedule">Schedule</string>
+    <string name="home_agenda_kind_milestone">Milestone</string>
+    <string name="home_agenda_meeting">Schedule steering meeting (API)</string>
+    <string name="home_agenda_default_meeting">Portfolio steering sync</string>
+    <string name="ass_export_server_reports">Executive reports (Railway)</string>
+    <string name="ass_export_server_reports_empty">No server reports yet — create projects and refresh Analytics.</string>
+    <string name="support_center_eyebrow">Enterprise support</string>
+    <string name="support_center_title">Support &amp; chat hub</string>
+    <string name="support_center_subtitle">Tickets and collaboration channels on Railway.</string>
+    <string name="support_center_open">Open support center</string>
+    <string name="support_center_new_ticket">New ticket</string>
+    <string name="support_center_new_chat">New chat</string>
+    <string name="support_center_refresh">Refresh lists</string>
+    <string name="support_center_tickets">Support tickets</string>
+    <string name="support_center_chats">Chats</string>
+    <string name="support_center_empty_tickets">No tickets yet — create one for the demo.</string>
+    <string name="support_center_empty_chats">No chats yet — create a delivery room.</string>
+    <string name="support_center_close">Close</string>
+    <string name="support_center_messages">Messages</string>
+    <string name="support_center_messages_empty">No messages — send one below.</string>
+    <string name="support_center_message_hint">Type a portfolio update…</string>
+    <string name="support_center_send_message">Send message (API)</string>
+    <string name="support_center_close_chat">Close thread</string>
 
     <!-- IAM · SSO short labels -->
     <string name="auth_sso_microsoft_short">Microsoft</string>

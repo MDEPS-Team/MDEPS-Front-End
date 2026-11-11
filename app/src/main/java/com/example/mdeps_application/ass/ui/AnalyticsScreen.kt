@@ -64,6 +64,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mdeps_application.R
 import com.example.mdeps_application.ass.application.AnalyticsViewModel
 import com.example.mdeps_application.ass.application.ProjectRiskAlert
+import com.example.mdeps_application.ui.LocalAppSnackbarHostState
 import com.example.mdeps_application.ui.ProfileButton
 import com.example.mdeps_application.ui.formatRelativeUpdatedAt
 import kotlinx.coroutines.delay
@@ -80,6 +81,15 @@ fun AnalyticsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lastRefreshedAt by viewModel.lastRefreshedAt.collectAsStateWithLifecycle()
+    val syncError by viewModel.syncError.collectAsStateWithLifecycle()
+    val executiveReports by viewModel.executiveReports.collectAsStateWithLifecycle()
+    val snackbar = LocalAppSnackbarHostState.current
+
+    LaunchedEffect(syncError) {
+        val message = syncError ?: return@LaunchedEffect
+        snackbar?.showSnackbar(message)
+        viewModel.clearSyncError()
+    }
     var showRiskDrillDown by remember { mutableStateOf(false) }
     var showExportSheet by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -166,6 +176,13 @@ fun AnalyticsScreen(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (uiState.fromServer) {
+                Text(
+                    text = stringResource(R.string.iam_profile_kpis_from_server),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Vx.Green,
+                )
+            }
             AnalyticsIntelligenceDashboard(
                 uiState = uiState,
                 efficiencyPercent = animatedEfficiency,
@@ -199,6 +216,7 @@ fun AnalyticsScreen(
         AnalyticsExportSheet(
             visible = showExportSheet,
             uiState = uiState,
+            executiveReports = executiveReports,
             onDismiss = { showExportSheet = false },
         )
     }

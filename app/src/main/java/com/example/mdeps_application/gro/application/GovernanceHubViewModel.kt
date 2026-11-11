@@ -10,13 +10,17 @@ import com.example.mdeps_application.app.data.GovernancePreferencesStore
 import com.example.mdeps_application.gro.domain.GroSeedContentKeys
 import com.example.mdeps_application.gro.domain.Milestone
 import com.example.mdeps_application.gro.domain.MilestoneRepository
+import com.example.mdeps_application.gro.domain.RemoteRiskMatrix
 import com.example.mdeps_application.gro.domain.Risk
+import com.example.mdeps_application.gro.domain.RiskHeatmapCell
 import com.example.mdeps_application.gro.domain.RiskRepository
 import com.example.mdeps_application.gro.domain.RiskSeverity
 import com.example.mdeps_application.gro.domain.RiskStatus
 import com.example.mdeps_application.pto.application.ProjectWithProgress
 import com.example.mdeps_application.pto.domain.Project
 import com.example.mdeps_application.pto.domain.ProjectRepository
+import com.example.mdeps_application.ass.domain.InsightsRepository
+import com.example.mdeps_application.ass.domain.RemoteGovernanceOverlay
 import com.example.mdeps_application.pto.domain.ProjectStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -57,6 +61,11 @@ data class GovernanceHubUiState(
     val deliveryIndex: Float = 1f,
     val showOptimizationCard: Boolean = false,
     val optimizationTargetProject: String? = null,
+    val metricsFromServer: Boolean = false,
+    val riskMatrixSegment: String? = null,
+    val riskMatrixEnvironment: String? = null,
+    val riskMatrixCells: List<RiskHeatmapCell> = emptyList(),
+    val riskMatrixFromServer: Boolean = false,
 )
 
 sealed interface GovernanceHubEvent {
@@ -68,6 +77,7 @@ class GovernanceHubViewModel(
     private val projectRepository: ProjectRepository,
     private val riskRepository: RiskRepository,
     private val milestoneRepository: MilestoneRepository,
+    private val insightsRepository: InsightsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GovernanceHubUiState())
@@ -77,8 +87,55 @@ class GovernanceHubViewModel(
     val events: SharedFlow<GovernanceHubEvent> = _events.asSharedFlow()
 
     private var previousCompliance: Int? = null
+    private val governanceOverlay = MutableStateFlow<RemoteGovernanceOverlay?>(null)
+    private val riskMatrixOverlay = MutableStateFlow<RemoteRiskMatrix?>(null)
+
+    private val _syncError = MutableStateFlow<String?>(null)
+    val syncError: StateFlow<String?> = _syncError.asStateFlow()
+
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
+    fun clearSyncError() {
+        _syncError.value = null
+    }
+
+    fun refreshRemoteInsights() {
+        viewModelScope.launch {
+            _isSyncing.value = true
+            _syncError.value = null
+            var failures = 0
+            insightsRepository.fetchGovernanceOverlay().fold(
+                onSuccess = { governanceOverlay.value = it },
+                onFailure = { error ->
+                    failures++
+                    _syncError.value = error.message
+                },
+            )
+            riskRepository.refreshFromRemote().onFailure { error ->
+                failures++
+                if (_syncError.value == null) _syncError.value = error.message
+            }
+            riskRepository.fetchRemoteHeatmap().fold(
+                onSuccess = { riskMatrixOverlay.value = it },
+                onFailure = { error ->
+                    failures++
+                    if (_syncError.value == null) _syncError.value = error.message
+                },
+            )
+            projectRepository.refreshFromRemote().onFailure { error ->
+                failures++
+                if (_syncError.value == null) _syncError.value = error.message
+            }
+            if (failures == 0) {
+                _syncError.value = null
+            }
+            _isSyncing.value = false
+        }
+    }
 
     init {
+        refreshRemoteInsights()
         viewModelScope.launch {
             combine(
                 preferencesStore.observePolicies(),
@@ -89,6 +146,8 @@ class GovernanceHubViewModel(
             ) { policies, lastAudit, projects, tasks, risks ->
                 PortfolioRiskSnapshot(policies, lastAudit, projects, tasks, risks)
             }.combine(milestoneRepository.observeAllMilestones()) { snapshot, milestones ->
+                snapshot to milestones
+            }.combine(governanceOverlay) { (snapshot, milestones), overlay ->
                 val items = mapPortfolio(snapshot.projects, snapshot.tasks)
                 buildState(
                     policies = snapshot.policies,
@@ -96,11 +155,33 @@ class GovernanceHubViewModel(
                     items = items,
                     risks = snapshot.risks,
                     milestones = milestones,
-                )
+                ).applyRemoteOverlay(overlay)
+            }.combine(riskMatrixOverlay) { state, matrix ->
+                state.applyRiskMatrix(matrix)
             }.collect { state ->
                 _uiState.value = state.copy(auditInProgress = _uiState.value.auditInProgress)
             }
         }
+    }
+
+    private fun GovernanceHubUiState.applyRemoteOverlay(overlay: RemoteGovernanceOverlay?): GovernanceHubUiState {
+        if (overlay == null) return this
+        return copy(
+            compliancePercent = overlay.compliancePercent ?: compliancePercent,
+            complianceDelta = overlay.complianceDelta ?: complianceDelta,
+            criticalViolations = overlay.criticalViolations ?: criticalViolations,
+            metricsFromServer = true,
+        )
+    }
+
+    private fun GovernanceHubUiState.applyRiskMatrix(matrix: RemoteRiskMatrix?): GovernanceHubUiState {
+        if (matrix == null || matrix.cells.isEmpty()) return this
+        return copy(
+            riskMatrixSegment = matrix.segment,
+            riskMatrixEnvironment = matrix.environment,
+            riskMatrixCells = matrix.cells,
+            riskMatrixFromServer = true,
+        )
     }
 
     private data class PortfolioRiskSnapshot(
@@ -293,6 +374,7 @@ class GovernanceHubViewModel(
             projectRepository: ProjectRepository,
             riskRepository: RiskRepository,
             milestoneRepository: MilestoneRepository,
+            insightsRepository: InsightsRepository,
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
@@ -302,6 +384,7 @@ class GovernanceHubViewModel(
                         projectRepository,
                         riskRepository,
                         milestoneRepository,
+                        insightsRepository,
                     ) as T
                 }
             }

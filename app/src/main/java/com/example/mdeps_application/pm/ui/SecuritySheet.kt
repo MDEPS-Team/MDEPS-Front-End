@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,12 +46,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.mdeps_application.R
+import com.example.mdeps_application.ui.Vx
 
 @Composable
 fun SecuritySheet(
     corporateEmail: String,
+    isSaving: Boolean,
     onDismiss: () -> Unit,
     onEmailChange: (String) -> Unit,
+    onSaveEmail: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var emailDraft by remember { mutableStateOf(corporateEmail) }
@@ -128,6 +133,25 @@ fun SecuritySheet(
                 shape = RoundedCornerShape(12.dp),
                 label = { Text(stringResource(R.string.iam_login_corporate_email_label)) },
             )
+            Text(
+                text = stringResource(R.string.iam_security_email_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+            Button(
+                onClick = onSaveEmail,
+                enabled = !isSaving && emailDraft.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Vx.Blue),
+            ) {
+                Text(
+                    text = stringResource(R.string.iam_security_save_email),
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
             HorizontalDivider()
 
             ListItem(

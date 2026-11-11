@@ -4,6 +4,15 @@ import kotlinx.coroutines.flow.Flow
 
 interface ProjectRepository {
 
+    /** Pulls projects from Railway and upserts them into the local cache (Room). */
+    suspend fun refreshFromRemote(): Result<Int>
+
+    /** Fetches a single project from the API and refreshes the local row. */
+    suspend fun syncProject(projectId: Long): Result<Project>
+
+    /** Pulls collaboration tasks from Railway and upserts them into Room (Kanban). */
+    suspend fun refreshTasksFromRemote(): Result<Int>
+
     fun observeProjects(): Flow<List<Project>>
 
     fun observeActiveProjectCount(): Flow<Int>

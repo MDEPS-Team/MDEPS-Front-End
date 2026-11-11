@@ -11,6 +11,13 @@ class OfflineFirstProjectRepository(
     private val projectDao: ProjectDao,
 ) : ProjectRepository {
 
+    override suspend fun refreshFromRemote(): Result<Int> = Result.success(0)
+
+    override suspend fun syncProject(projectId: Long): Result<Project> =
+        Result.failure(UnsupportedOperationException("Remote sync is not available."))
+
+    override suspend fun refreshTasksFromRemote(): Result<Int> = Result.success(0)
+
     override fun observeProjects(): Flow<List<Project>> =
         projectDao.observeProjects().map { entities ->
             entities.map { it.toDomain() }

@@ -11,6 +11,7 @@ import com.example.mdeps_application.iam.domain.PasswordPolicy
 import com.example.mdeps_application.iam.domain.PmoRole
 import com.example.mdeps_application.iam.domain.RegistrationDraft
 import com.example.mdeps_application.iam.domain.Token
+import com.example.mdeps_application.core.network.AuthSessionCoordinator
 import com.example.mdeps_application.iam.domain.User
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.map
 
 class DataStoreAuthRepository(
     private val dataStore: DataStore<Preferences>,
+    private val authSession: AuthSessionCoordinator,
 ) : AuthRepository {
 
     override suspend fun login(credentials: Credentials): Result<User> {
@@ -96,6 +98,7 @@ class DataStoreAuthRepository(
             preferences[KEY_ACCESS_TOKEN] = token.accessToken
             preferences[KEY_REFRESH_TOKEN] = token.refreshToken
         }
+        authSession.onTokenSaved(token)
     }
 
     override fun getToken(): Flow<Token?> =
@@ -103,8 +106,11 @@ class DataStoreAuthRepository(
             val access = preferences[KEY_ACCESS_TOKEN]
             val refresh = preferences[KEY_REFRESH_TOKEN]
             when {
-                access.isNullOrBlank() || refresh.isNullOrBlank() -> null
-                else -> Token(accessToken = access, refreshToken = refresh)
+                access.isNullOrBlank() -> null
+                else -> Token(
+                    accessToken = access,
+                    refreshToken = refresh.orEmpty().ifBlank { access },
+                )
             }
         }
 
@@ -120,6 +126,7 @@ class DataStoreAuthRepository(
                 preferences[KEY_AVATAR_URI] = avatar
             }
         }
+        authSession.onUserProfileSaved(user)
     }
 
     override fun observeUserProfile(): Flow<User?> =
@@ -156,7 +163,10 @@ class DataStoreAuthRepository(
             preferences.remove(KEY_ACCESS_TOKEN)
             preferences.remove(KEY_REFRESH_TOKEN)
         }
+        authSession.onSessionCleared()
     }
+
+    override fun currentUserId(): String? = authSession.userId()
 
     companion object {
         const val RESET_CODE_LENGTH = 6

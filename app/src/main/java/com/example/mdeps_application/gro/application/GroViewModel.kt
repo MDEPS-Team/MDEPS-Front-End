@@ -57,6 +57,7 @@ class GroViewModel(
     fun loadGovernanceData(projectId: Long) {
         governanceJob?.cancel()
         governanceJob = viewModelScope.launch {
+            riskRepository.refreshFromRemote()
             val cleaned = sanitizeDuplicateSeedRecords(projectId)
             if (cleaned > 0) {
                 _uiEvents.emit(

@@ -37,6 +37,7 @@ import com.example.mdeps_application.ass.application.AnalyticsExportFormat
 import com.example.mdeps_application.ass.application.AnalyticsExportRange
 import com.example.mdeps_application.ass.application.AnalyticsUiState
 import com.example.mdeps_application.ass.application.PortfolioReportExporter
+import com.example.mdeps_application.ass.domain.ExecutiveReportSummary
 import com.example.mdeps_application.ui.Caption
 import com.example.mdeps_application.ui.Vx
 import com.example.mdeps_application.ui.VxCard
@@ -45,6 +46,7 @@ import com.example.mdeps_application.ui.VxCard
 fun AnalyticsExportSheet(
     visible: Boolean,
     uiState: AnalyticsUiState,
+    executiveReports: List<ExecutiveReportSummary>,
     onDismiss: () -> Unit,
 ) {
     if (!visible) return
@@ -108,6 +110,19 @@ fun AnalyticsExportSheet(
                 Text(stringResource(R.string.ass_export_include_squad))
             }
             Text(stringResource(R.string.ass_export_security_note), color = Vx.Muted)
+            if (executiveReports.isNotEmpty()) {
+                Text(stringResource(R.string.ass_export_server_reports), fontWeight = FontWeight.SemiBold)
+                executiveReports.take(5).forEach { report ->
+                    VxCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text(report.title, fontWeight = FontWeight.Bold)
+                            Text(report.subtitle, color = Vx.Muted)
+                        }
+                    }
+                }
+            } else {
+                Text(stringResource(R.string.ass_export_server_reports_empty), color = Vx.Muted)
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.ass_export_cancel))

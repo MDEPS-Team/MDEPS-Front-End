@@ -13,17 +13,28 @@ object RetrofitClient {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor)
-        .build()
+    private lateinit var retrofit: Retrofit
 
-    private val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    fun initialize(authSession: AuthSessionCoordinator) {
+        if (::retrofit.isInitialized) return
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(AuthInterceptor(authSession))
+            .addInterceptor(UnauthorizedInterceptor(authSession))
+            .addInterceptor(loggingInterceptor)
+            .build()
+        retrofit = Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
-    fun <T> createService(serviceClass: Class<T>): T = retrofit.create(serviceClass)
+    fun <T> createService(serviceClass: Class<T>): T {
+        check(::retrofit.isInitialized) {
+            "RetrofitClient.initialize() must be called from Application.onCreate()"
+        }
+        return retrofit.create(serviceClass)
+    }
 
     inline fun <reified T> createService(): T = createService(T::class.java)
 }

@@ -66,6 +66,22 @@ class KanbanViewModel(
     private val _createdCard = MutableStateFlow<KanbanCard?>(null)
     val createdCard: StateFlow<KanbanCard?> = _createdCard.asStateFlow()
 
+    private val _syncError = MutableStateFlow<String?>(null)
+    val syncError: StateFlow<String?> = _syncError.asStateFlow()
+
+    fun clearSyncError() {
+        _syncError.value = null
+    }
+
+    fun refreshTasks() {
+        viewModelScope.launch {
+            projectRepository.refreshTasksFromRemote().fold(
+                onSuccess = { _syncError.value = null },
+                onFailure = { error -> _syncError.value = error.message },
+            )
+        }
+    }
+
     val uiState: StateFlow<KanbanUiState> = combine(
         projectRepository.observeProjects(),
         projectRepository.observeAllTasks(),
@@ -109,13 +125,25 @@ class KanbanViewModel(
         query.value = value
     }
 
+    init {
+        viewModelScope.launch {
+            projectRepository.refreshTasksFromRemote()
+        }
+    }
+
     fun moveTask(task: Task, target: TaskStatus) {
         if (task.effectiveStatus == target) return
-        viewModelScope.launch { projectRepository.updateTask(task.movedTo(target)) }
+        viewModelScope.launch {
+            runCatching { projectRepository.updateTask(task.movedTo(target)) }
+                .onFailure { error -> _syncError.value = error.message }
+        }
     }
 
     fun deleteTask(task: Task) {
-        viewModelScope.launch { projectRepository.deleteTask(task.id) }
+        viewModelScope.launch {
+            runCatching { projectRepository.deleteTask(task.id) }
+                .onFailure { error -> _syncError.value = error.message }
+        }
     }
 
     fun createTask(draft: TaskDraft) {
@@ -135,7 +163,12 @@ class KanbanViewModel(
                 storyPoints = draft.storyPoints,
                 description = draft.description.trim().ifEmpty { null },
             )
-            val id = projectRepository.insertTask(task)
+            val id = try {
+                projectRepository.insertTask(task)
+            } catch (error: Exception) {
+                _syncError.value = error.message ?: "Could not create task."
+                return@launch
+            }
             val projectName = uiState.value.projects.firstOrNull { it.id == projectId }?.name.orEmpty()
             _createdCard.value = KanbanCard(task.copy(id = id), projectName)
         }

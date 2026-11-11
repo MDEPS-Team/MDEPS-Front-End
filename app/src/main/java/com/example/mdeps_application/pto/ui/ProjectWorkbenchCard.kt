@@ -29,7 +29,6 @@ import com.example.mdeps_application.R
 import com.example.mdeps_application.pto.application.ProjectWithProgress
 import com.example.mdeps_application.pto.domain.ProjectStatus
 import com.example.mdeps_application.ui.Pill
-import androidx.compose.ui.unit.sp
 import com.example.mdeps_application.ui.Vx
 import com.example.mdeps_application.ui.VxCard
 import com.example.mdeps_application.ui.VxProgress
@@ -41,25 +40,40 @@ fun ProjectWorkbenchCard(
     cardContentDescription: String,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    highRiskCount: Int = 0,
     onDelete: (() -> Unit)? = null,
     deleteContentDescription: String? = null,
 ) {
     val project = item.project
-    val atRisk = project.status == ProjectStatus.AT_RISK
-    val accent = if (atRisk) Vx.Red else Vx.Blue
-    val pillBg = if (atRisk) Vx.RedSoft else Vx.BlueSoft
-    val statusLabel = project.status.localizedLabel()
+    val governanceAlert = highRiskCount > 0
+    val accent = when {
+        governanceAlert -> Vx.Red
+        project.status == ProjectStatus.COMPLETED -> Vx.Green
+        else -> Vx.Blue
+    }
+    val pillBg = when {
+        governanceAlert -> Vx.RedSoft
+        project.status == ProjectStatus.COMPLETED -> Vx.GreenSoft
+        project.status == ProjectStatus.AT_RISK -> Vx.Chip
+        else -> Vx.BlueSoft
+    }
+    val statusLabel = if (governanceAlert) {
+        stringResource(R.string.pto_hub_tag_attention)
+    } else {
+        project.status.localizedLabel()
+    }
+    val pillAccent = if (project.status == ProjectStatus.AT_RISK && !governanceAlert) Vx.Muted else accent
 
     VxCard(
         modifier = modifier
             .fillMaxWidth()
             .semantics { contentDescription = cardContentDescription },
         onClick = onClick,
-        containerColor = if (atRisk) Vx.RedSoft else Vx.Surface,
+        containerColor = if (governanceAlert) Vx.RedSoft else Vx.Surface,
     ) {
         Column(Modifier.padding(if (compact) 12.dp else 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (atRisk) {
+                if (governanceAlert) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
@@ -85,7 +99,7 @@ fun ProjectWorkbenchCard(
                         )
                     }
                 }
-                Pill(statusLabel, pillBg, accent)
+                Pill(statusLabel, pillBg, pillAccent)
             }
             if (!compact) {
                 Text(

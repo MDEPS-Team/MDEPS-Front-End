@@ -14,6 +14,9 @@ import com.example.mdeps_application.pto.domain.ProjectRepository
 import com.example.mdeps_application.pto.domain.ProjectStatus
 import com.example.mdeps_application.pto.domain.Task
 import com.example.mdeps_application.R
+import com.example.mdeps_application.ass.domain.ExecutiveReportSummary
+import com.example.mdeps_application.ass.domain.InsightsRepository
+import com.example.mdeps_application.ass.domain.RemoteAnalyticsOverlay
 import com.example.mdeps_application.pto.domain.parseInitiativeDomains
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,12 +66,14 @@ data class AnalyticsUiState(
     val budgetSlices: List<AnalyticsBudgetSlice> = emptyList(),
     val portfolioHealthPercent: Int = 0,
     val capacityRows: List<AnalyticsCapacityRow> = emptyList(),
+    val fromServer: Boolean = false,
 )
 
 class AnalyticsViewModel(
     private val projectRepository: ProjectRepository,
     private val riskRepository: RiskRepository,
     private val milestoneRepository: MilestoneRepository,
+    private val insightsRepository: InsightsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AnalyticsUiState())
@@ -78,9 +83,38 @@ class AnalyticsViewModel(
     val lastRefreshedAt: StateFlow<Long> = _lastRefreshedAt.asStateFlow()
 
     private val _selectedPeriod = MutableStateFlow(AnalyticsPeriod.MONTH)
+    private val remoteOverlay = MutableStateFlow<RemoteAnalyticsOverlay?>(null)
+
+    private val _syncError = MutableStateFlow<String?>(null)
+    val syncError: StateFlow<String?> = _syncError.asStateFlow()
+
+    private val _executiveReports = MutableStateFlow<List<ExecutiveReportSummary>>(emptyList())
+    val executiveReports: StateFlow<List<ExecutiveReportSummary>> = _executiveReports.asStateFlow()
+
+    fun clearSyncError() {
+        _syncError.value = null
+    }
 
     fun markRefreshed() {
+        refreshRemoteInsights()
         _lastRefreshedAt.value = System.currentTimeMillis()
+    }
+
+    private fun refreshRemoteInsights() {
+        viewModelScope.launch {
+            insightsRepository.fetchAnalyticsOverlay().fold(
+                onSuccess = { remoteOverlay.value = it },
+                onFailure = { error -> _syncError.value = error.message },
+            )
+            insightsRepository.fetchExecutiveReports().fold(
+                onSuccess = { _executiveReports.value = it },
+                onFailure = { error ->
+                    if (_syncError.value == null) _syncError.value = error.message
+                },
+            )
+            riskRepository.refreshFromRemote()
+            projectRepository.refreshFromRemote()
+        }
     }
 
     fun setAnalyticsPeriod(period: AnalyticsPeriod) {
@@ -89,25 +123,43 @@ class AnalyticsViewModel(
     }
 
     init {
+        refreshRemoteInsights()
         viewModelScope.launch {
             combine(
-                projectRepository.observeAllTasks(),
-                riskRepository.observeAllRisks(),
-                milestoneRepository.observeAllMilestones(),
-                projectRepository.observeProjects(),
-                _selectedPeriod,
-            ) { tasks, risks, milestones, projects, period ->
-                buildAnalyticsState(
-                    tasks = tasks,
-                    risks = risks,
-                    milestones = milestones,
-                    projects = projects,
-                    period = period,
-                )
+                combine(
+                    projectRepository.observeAllTasks(),
+                    riskRepository.observeAllRisks(),
+                    milestoneRepository.observeAllMilestones(),
+                    projectRepository.observeProjects(),
+                    _selectedPeriod,
+                ) { tasks, risks, milestones, projects, period ->
+                    buildAnalyticsState(
+                        tasks = tasks,
+                        risks = risks,
+                        milestones = milestones,
+                        projects = projects,
+                        period = period,
+                    )
+                },
+                remoteOverlay,
+            ) { base, overlay ->
+                base.applyRemoteOverlay(overlay)
             }.collect { analyticsState ->
                 _uiState.value = analyticsState
             }
         }
+    }
+
+    private fun AnalyticsUiState.applyRemoteOverlay(overlay: RemoteAnalyticsOverlay?): AnalyticsUiState {
+        if (overlay == null) return this
+        return copy(
+            portfolioHealthPercent = overlay.portfolioHealthPercent ?: portfolioHealthPercent,
+            operativeEfficiency = overlay.operativeEfficiency ?: operativeEfficiency,
+            activeCriticalRisks = overlay.activeCriticalRisks ?: activeCriticalRisks,
+            capacityRows = overlay.capacityRows ?: capacityRows,
+            budgetTotalUsd = overlay.budgetTotalUsd ?: budgetTotalUsd,
+            fromServer = true,
+        )
     }
 
     private fun buildAnalyticsState(
@@ -315,6 +367,7 @@ class AnalyticsViewModel(
             projectRepository: ProjectRepository,
             riskRepository: RiskRepository,
             milestoneRepository: MilestoneRepository,
+            insightsRepository: InsightsRepository,
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
@@ -323,6 +376,7 @@ class AnalyticsViewModel(
                         projectRepository,
                         riskRepository,
                         milestoneRepository,
+                        insightsRepository,
                     ) as T
                 }
             }
