@@ -120,6 +120,7 @@ fun KanbanScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val created by viewModel.createdCard.collectAsStateWithLifecycle()
+    val syncError by viewModel.syncError.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val haptics = LocalHapticFeedback.current
@@ -131,6 +132,16 @@ fun KanbanScreen(
             viewModel.selectProject(initialProjectId)
             appliedInitialFilter = true
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshTasks()
+    }
+
+    LaunchedEffect(syncError) {
+        val message = syncError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearSyncError()
     }
 
     var compact by rememberSaveable { mutableStateOf(false) }

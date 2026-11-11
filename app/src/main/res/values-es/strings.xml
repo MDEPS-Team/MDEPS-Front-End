@@ -11,6 +11,8 @@
     <string name="iam_login_title">Vantage PMO</string>
     <string name="iam_login_subtitle">Oficina de Gestión de Proyectos</string>
     <string name="iam_login_corporate_email_label">Correo corporativo</string>
+    <string name="iam_session_expired">Tu sesión expiró. Inicia sesión de nuevo.</string>
+    <string name="iam_profile_kpis_from_server">Sincronizado con el servidor</string>
     <string name="iam_login_username_label">Nombre de usuario</string>
     <string name="iam_login_password_label">Contraseña</string>
     <string name="iam_login_sign_in">Iniciar sesión</string>
@@ -75,6 +77,10 @@
     <string name="iam_profile_digest_weekly">Semanal</string>
     <string name="iam_profile_dark_studio">Tema estudio oscuro</string>
     <string name="iam_profile_dark_studio_sub">UI de alto contraste para revisión ejecutiva</string>
+    <string name="iam_profile_notifications">Notificaciones push</string>
+    <string name="iam_profile_notifications_sub">Sincronizado con user-settings del servidor</string>
+    <string name="gro_risk_matrix_title">Mapa de calor de riesgos</string>
+    <string name="gro_risk_matrix_meta">%1$s · %2$s</string>
     <string name="iam_profile_access_title">Acceso y nivel de gobernanza</string>
     <string name="iam_profile_tier_badge">Nivel 1</string>
     <string name="iam_profile_master_role">Líder de proyecto y admin empresarial</string>
@@ -107,6 +113,8 @@
     <!-- IAM Hoja de seguridad -->
     <string name="iam_security_sheet_title">Configuración de seguridad</string>
     <string name="iam_security_change_email">Cambiar correo corporativo</string>
+    <string name="iam_security_save_email">Guardar correo en el servidor</string>
+    <string name="iam_security_email_hint">Se guarda en Railway con PATCH /users/{id} (tablas users y profiles). Cierra sesión y vuelve a entrar solo si el correo no refresca.</string>
     <string name="iam_security_view_id">Ver ID de empleado</string>
     <string name="iam_security_change_2fa">Cambiar autenticación de dos factores</string>
     <string name="iam_security_employee_id_label">ID de empleado</string>
@@ -747,7 +755,34 @@
     <string name="home_agenda_count">%1$d abiertos</string>
     <string name="home_agenda_overdue">Vencido · %1$s</string>
     <string name="home_agenda_empty_title">Agenda despejada</string>
-    <string name="home_agenda_empty_desc">No hay hitos pendientes. Registra uno desde Gobernanza.</string>
+    <string name="home_agenda_empty_desc">Sin hitos locales ni reuniones del servidor.</string>
+    <string name="home_agenda_sync">Sincronizar agenda</string>
+    <string name="home_agenda_create">Guardar check-in</string>
+    <string name="home_agenda_default_event">Check-in de portafolio PMO</string>
+    <string name="home_agenda_kind_meeting">Reunión</string>
+    <string name="home_agenda_kind_schedule">Agenda</string>
+    <string name="home_agenda_kind_milestone">Hito</string>
+    <string name="home_agenda_meeting">Programar reunión (API)</string>
+    <string name="home_agenda_default_meeting">Sincronización de dirección de portafolio</string>
+    <string name="ass_export_server_reports">Informes ejecutivos (Railway)</string>
+    <string name="ass_export_server_reports_empty">Sin informes en servidor — crea proyectos y actualiza Analytics.</string>
+    <string name="support_center_eyebrow">Soporte corporativo</string>
+    <string name="support_center_title">Centro de soporte y chat</string>
+    <string name="support_center_subtitle">Tickets y canales en Railway.</string>
+    <string name="support_center_open">Abrir centro de soporte</string>
+    <string name="support_center_new_ticket">Nuevo ticket</string>
+    <string name="support_center_new_chat">Nuevo chat</string>
+    <string name="support_center_refresh">Actualizar listas</string>
+    <string name="support_center_tickets">Tickets de soporte</string>
+    <string name="support_center_chats">Chats</string>
+    <string name="support_center_empty_tickets">Sin tickets — crea uno para la demo.</string>
+    <string name="support_center_empty_chats">Sin chats — crea una sala de entrega.</string>
+    <string name="support_center_close">Cerrar</string>
+    <string name="support_center_messages">Mensajes</string>
+    <string name="support_center_messages_empty">Sin mensajes — envía uno abajo.</string>
+    <string name="support_center_message_hint">Escribe una actualización…</string>
+    <string name="support_center_send_message">Enviar mensaje (API)</string>
+    <string name="support_center_close_chat">Cerrar hilo</string>
 
     <!-- IAM · SSO short labels -->
     <string name="auth_sso_microsoft_short">Microsoft</string>

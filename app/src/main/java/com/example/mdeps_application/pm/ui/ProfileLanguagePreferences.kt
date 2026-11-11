@@ -27,7 +27,10 @@ private const val LANGUAGE_EN = "en"
 private const val LANGUAGE_ES = "es"
 
 @Composable
-fun ProfileLanguagePreferenceSection(modifier: Modifier = Modifier) {
+fun ProfileLanguagePreferenceSection(
+    modifier: Modifier = Modifier,
+    onLanguageSelected: (String) -> Unit = {},
+) {
     val selectedLanguage = resolveSelectedAppLanguage()
     val englishLabel = stringResource(R.string.profile_language_en)
     val spanishLabel = stringResource(R.string.profile_language_es)
@@ -59,7 +62,10 @@ fun ProfileLanguagePreferenceSection(modifier: Modifier = Modifier) {
             ) {
                 SegmentedButton(
                     selected = selectedLanguage == LANGUAGE_EN,
-                    onClick = { applyAppLanguage(LANGUAGE_EN) },
+                    onClick = {
+                        applyAppLanguage(LANGUAGE_EN)
+                        onLanguageSelected(LANGUAGE_EN)
+                    },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
                     modifier = Modifier.semantics { contentDescription = englishA11y },
                 ) {
@@ -67,7 +73,10 @@ fun ProfileLanguagePreferenceSection(modifier: Modifier = Modifier) {
                 }
                 SegmentedButton(
                     selected = selectedLanguage == LANGUAGE_ES,
-                    onClick = { applyAppLanguage(LANGUAGE_ES) },
+                    onClick = {
+                        applyAppLanguage(LANGUAGE_ES)
+                        onLanguageSelected(LANGUAGE_ES)
+                    },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                     modifier = Modifier.semantics { contentDescription = spanishA11y },
                 ) {

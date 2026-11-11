@@ -4,6 +4,10 @@ import kotlinx.coroutines.flow.Flow
 
 interface RiskRepository {
 
+    suspend fun refreshFromRemote(): Result<Int>
+
+    suspend fun fetchRemoteHeatmap(): Result<RemoteRiskMatrix?>
+
     fun observeAllRisks(): Flow<List<Risk>>
 
     fun observeRisksByProjectId(projectId: Long): Flow<List<Risk>>

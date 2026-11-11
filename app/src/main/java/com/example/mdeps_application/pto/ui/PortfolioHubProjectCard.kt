@@ -37,16 +37,17 @@ fun PortfolioHubProjectCard(
     deleteContentDescription: String,
 ) {
     val project = item.project
+    val governanceAlert = highRiskCount > 0
     val statusTag = when {
-        project.status == ProjectStatus.AT_RISK -> stringResource(R.string.pto_hub_tag_at_risk)
-        highRiskCount > 0 -> stringResource(R.string.pto_hub_tag_attention)
+        governanceAlert -> stringResource(R.string.pto_hub_tag_attention)
         project.status == ProjectStatus.COMPLETED -> stringResource(R.string.pto_hub_tag_done)
+        project.status == ProjectStatus.AT_RISK -> stringResource(R.string.pto_status_at_risk)
         else -> stringResource(R.string.pto_hub_tag_on_track)
     }
     val tagColors = when {
-        project.status == ProjectStatus.AT_RISK -> Vx.RedSoft to Vx.Red
-        highRiskCount > 0 -> Vx.RedSoft to Vx.Red
+        governanceAlert -> Vx.RedSoft to Vx.Red
         project.status == ProjectStatus.COMPLETED -> Vx.GreenSoft to Vx.Green
+        project.status == ProjectStatus.AT_RISK -> Vx.Chip to Vx.Muted
         else -> Vx.BlueSoft to Vx.Blue
     }
 
@@ -81,7 +82,7 @@ fun PortfolioHubProjectCard(
             ) {
                 VxProgress(
                     progress = item.progress,
-                    color = if (project.status == ProjectStatus.AT_RISK) Vx.Red else Vx.Blue,
+                    color = if (governanceAlert) Vx.Red else Vx.Blue,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
@@ -102,7 +103,7 @@ fun PortfolioHubProjectCard(
             )
             Row(Modifier.padding(top = 12.dp)) {
                 when {
-                    project.status == ProjectStatus.AT_RISK || highRiskCount > 0 -> {
+                    governanceAlert -> {
                         Button(onClick = onResolveAlerts) {
                             Text(stringResource(R.string.pto_hub_action_resolve))
                         }

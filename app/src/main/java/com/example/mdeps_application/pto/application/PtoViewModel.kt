@@ -10,6 +10,11 @@ import com.example.mdeps_application.gro.domain.RiskRepository
 import com.example.mdeps_application.gro.domain.RiskSeverity
 import com.example.mdeps_application.gro.domain.RiskStatus
 import com.example.mdeps_application.gro.domain.GroSeedContentKeys
+import com.example.mdeps_application.core.identity.resolveBackendUserId
+import com.example.mdeps_application.iam.domain.AuthRepository
+import com.example.mdeps_application.pto.domain.AgendaRepository
+import com.example.mdeps_application.pto.domain.PortfolioAgendaEntry
+import com.example.mdeps_application.pto.domain.AgendaEntryKind
 import com.example.mdeps_application.pto.domain.Project
 import com.example.mdeps_application.pto.domain.ProjectRepository
 import com.example.mdeps_application.pto.domain.ProjectStatus
@@ -67,6 +72,8 @@ class PtoViewModel(
     private val projectRepository: ProjectRepository,
     private val riskRepository: RiskRepository,
     private val milestoneRepository: MilestoneRepository,
+    private val agendaRepository: AgendaRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _projects = MutableStateFlow<List<Project>>(emptyList())
@@ -81,6 +88,12 @@ class PtoViewModel(
     private val _milestoneDigest = MutableStateFlow(MilestoneDigest())
     val milestoneDigest: StateFlow<MilestoneDigest> = _milestoneDigest.asStateFlow()
 
+    private val _portfolioAgenda = MutableStateFlow<List<PortfolioAgendaEntry>>(emptyList())
+    val portfolioAgenda: StateFlow<List<PortfolioAgendaEntry>> = _portfolioAgenda.asStateFlow()
+
+    private val _agendaFromServer = MutableStateFlow(false)
+    val agendaFromServer: StateFlow<Boolean> = _agendaFromServer.asStateFlow()
+
     private val _projectDetailState = MutableStateFlow(ProjectDetailUiState())
     val projectDetailState: StateFlow<ProjectDetailUiState> = _projectDetailState.asStateFlow()
 
@@ -89,11 +102,100 @@ class PtoViewModel(
     private val _lastRefreshedAt = MutableStateFlow(System.currentTimeMillis())
     val lastRefreshedAt: StateFlow<Long> = _lastRefreshedAt.asStateFlow()
 
+    private val _syncError = MutableStateFlow<String?>(null)
+    val syncError: StateFlow<String?> = _syncError.asStateFlow()
+
+    fun clearSyncError() {
+        _syncError.value = null
+    }
+
     fun markPortfolioRefreshed() {
-        _lastRefreshedAt.value = System.currentTimeMillis()
+        viewModelScope.launch {
+            projectRepository.refreshFromRemote().fold(
+                onSuccess = {
+                    _lastRefreshedAt.value = System.currentTimeMillis()
+                    _syncError.value = null
+                },
+                onFailure = { error ->
+                    _lastRefreshedAt.value = System.currentTimeMillis()
+                    _syncError.value = error.message
+                },
+            )
+            refreshRemoteAgenda()
+        }
+    }
+
+    fun refreshRemoteAgenda() {
+        val userId = authRepository.resolveBackendUserId() ?: return
+        viewModelScope.launch {
+            agendaRepository.refreshAgenda(userId).fold(
+                onSuccess = { entries ->
+                    _portfolioAgenda.value = entries
+                    _agendaFromServer.value = entries.isNotEmpty()
+                },
+                onFailure = { error ->
+                    _syncError.value = error.message
+                },
+            )
+        }
+    }
+
+    fun createAgendaCheckIn(title: String) {
+        val userId = authRepository.resolveBackendUserId()
+        val trimmed = title.trim()
+        if (userId == null || trimmed.isEmpty()) return
+        val start = System.currentTimeMillis() + 86_400_000L
+        viewModelScope.launch {
+            agendaRepository.createScheduleEvent(
+                userId = userId,
+                title = trimmed,
+                startMillis = start,
+                description = "Created from Vantage PMO home",
+            ).fold(
+                onSuccess = { refreshRemoteAgenda() },
+                onFailure = { error -> _syncError.value = error.message },
+            )
+        }
+    }
+
+    fun schedulePortfolioMeeting(title: String) {
+        val trimmed = title.trim()
+        if (trimmed.isEmpty()) return
+        val start = System.currentTimeMillis() + (2 * 86_400_000L)
+        viewModelScope.launch {
+            agendaRepository.createMeeting(
+                title = trimmed,
+                startMillis = start,
+                location = "Vantage PMO — virtual",
+            ).fold(
+                onSuccess = { refreshRemoteAgenda() },
+                onFailure = { error -> _syncError.value = error.message },
+            )
+        }
+    }
+
+    fun buildCombinedAgenda(
+        milestones: List<UpcomingMilestone>,
+        remote: List<PortfolioAgendaEntry>,
+    ): List<PortfolioAgendaEntry> {
+        val local = milestones.map { item ->
+            PortfolioAgendaEntry(
+                id = "milestone-${item.milestone.id}",
+                title = item.milestone.title,
+                subtitle = item.projectName,
+                whenMillis = item.milestone.targetDate,
+                kind = AgendaEntryKind.MILESTONE,
+                projectId = item.milestone.projectId,
+            )
+        }
+        return (local + remote).sortedBy { it.whenMillis }.take(COMBINED_AGENDA_LIMIT)
     }
 
     init {
+        viewModelScope.launch {
+            projectRepository.refreshFromRemote()
+        }
+        refreshRemoteAgenda()
         viewModelScope.launch {
             projectRepository.observeProjects().collect { projectList ->
                 _projects.value = projectList
@@ -176,6 +278,7 @@ class PtoViewModel(
     fun loadProjectDetails(projectId: Long) {
         projectDetailsJob?.cancel()
         projectDetailsJob = viewModelScope.launch {
+            projectRepository.syncProject(projectId)
             combine(
                 projectRepository.observeProjects().map { projects ->
                     projects.firstOrNull { it.id == projectId }
@@ -205,19 +308,25 @@ class PtoViewModel(
         val trimmedName = name.trim()
         if (trimmedName.isEmpty()) return
         viewModelScope.launch {
-            val projectId = projectRepository.insertProject(
-                Project(
-                    id = 0L,
-                    name = trimmedName,
-                    description = description.trim(),
-                    status = status,
-                ),
-            )
+            val projectId = try {
+                projectRepository.insertProject(
+                    Project(
+                        id = 0L,
+                        name = trimmedName,
+                        description = description.trim(),
+                        status = status,
+                    ),
+                )
+            } catch (error: Exception) {
+                _syncError.value = error.message ?: "Could not create project."
+                return@launch
+            }
             provisionInitiativeArtifacts(
                 projectId = projectId,
                 gateDateMillis = gateDateMillis,
                 seedHighSeverityRisk = seedHighSeverityRisk || status == ProjectStatus.AT_RISK,
             )
+            projectRepository.refreshFromRemote()
             markPortfolioRefreshed()
             onCreated(projectId)
         }
@@ -291,15 +400,19 @@ class PtoViewModel(
 
     fun addTask(projectId: Long, title: String) {
         viewModelScope.launch {
-            projectRepository.insertTask(
-                Task(
-                    id = 0L,
-                    projectId = projectId,
-                    title = title,
-                    isCompleted = false,
-                    evidencePhotoUri = null,
-                ),
-            )
+            try {
+                projectRepository.insertTask(
+                    Task(
+                        id = 0L,
+                        projectId = projectId,
+                        title = title,
+                        isCompleted = false,
+                        evidencePhotoUri = null,
+                    ),
+                )
+            } catch (error: Exception) {
+                _syncError.value = error.message ?: "Could not create task."
+            }
         }
     }
 
@@ -318,6 +431,7 @@ class PtoViewModel(
 
     companion object {
         private const val UPCOMING_MILESTONES_LIMIT = 4
+        private const val COMBINED_AGENDA_LIMIT = 8
 
         private const val PROVISION_TASK_KICKOFF = "provision:kickoff"
         private const val PROVISION_TASK_RACI = "provision:raci"
@@ -326,6 +440,8 @@ class PtoViewModel(
             projectRepository: ProjectRepository,
             riskRepository: RiskRepository,
             milestoneRepository: MilestoneRepository,
+            agendaRepository: AgendaRepository,
+            authRepository: AuthRepository,
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
@@ -334,6 +450,8 @@ class PtoViewModel(
                         projectRepository = projectRepository,
                         riskRepository = riskRepository,
                         milestoneRepository = milestoneRepository,
+                        agendaRepository = agendaRepository,
+                        authRepository = authRepository,
                     ) as T
                 }
             }

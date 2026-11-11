@@ -28,4 +28,7 @@ interface AuthRepository {
     suspend fun updateUserEmail(email: String)
 
     suspend fun clearSession()
+
+    /** Backend user id from the last successful sign-in (for authenticated API calls). */
+    fun currentUserId(): String? = null
 }

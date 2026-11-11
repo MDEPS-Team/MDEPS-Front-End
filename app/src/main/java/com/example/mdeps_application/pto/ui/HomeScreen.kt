@@ -31,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mdeps_application.R
 import com.example.mdeps_application.ass.application.AnalyticsViewModel
 import com.example.mdeps_application.pto.application.PtoViewModel
+import com.example.mdeps_application.ui.LocalAppSnackbarHostState
 import com.example.mdeps_application.pto.domain.ProjectStatus
 import com.example.mdeps_application.ui.ProfileButton
 import com.example.mdeps_application.ui.Vx
@@ -63,6 +65,7 @@ private const val FOCUS_PROJECTS_LIMIT = 3
 fun HomeScreen(
     viewModel: PtoViewModel,
     analyticsViewModel: AnalyticsViewModel,
+    riskCountByProject: Map<Long, Int>,
     userDisplayName: String?,
     userRole: String?,
     onProjectClick: (Long) -> Unit,
@@ -74,24 +77,46 @@ fun HomeScreen(
     onOpenProjectMilestones: (Long) -> Unit,
     onOpenKanban: () -> Unit,
     onProfile: () -> Unit,
+    onOpenSupport: () -> Unit,
 ) {
     val dashboard by viewModel.portfolioDashboard.collectAsStateWithLifecycle()
     val homeMetrics by viewModel.homeMetrics.collectAsStateWithLifecycle()
     val milestones by viewModel.milestoneDigest.collectAsStateWithLifecycle()
+    val remoteAgenda by viewModel.portfolioAgenda.collectAsStateWithLifecycle()
+    val agendaFromServer by viewModel.agendaFromServer.collectAsStateWithLifecycle()
+    val combinedAgenda = remember(milestones.upcoming, remoteAgenda) {
+        viewModel.buildCombinedAgenda(milestones.upcoming, remoteAgenda)
+    }
+    val defaultCheckInTitle = stringResource(R.string.home_agenda_default_event)
+    val defaultMeetingTitle = stringResource(R.string.home_agenda_default_meeting)
     val analytics by analyticsViewModel.uiState.collectAsStateWithLifecycle()
     val lastRefreshedAt by viewModel.lastRefreshedAt.collectAsStateWithLifecycle()
     var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val snackbar = LocalAppSnackbarHostState.current
+    val syncError by viewModel.syncError.collectAsStateWithLifecycle()
 
-    // En riesgo primero (menor avance = más urgente), luego en curso con más momentum.
-    val focusProjects = remember(dashboard.items) {
-        val atRisk = dashboard.items.filter { it.project.status == ProjectStatus.AT_RISK }.sortedBy { it.progress }
-        val active = dashboard.items.filter { it.project.status == ProjectStatus.IN_PROGRESS }
+    LaunchedEffect(syncError) {
+        val message = syncError ?: return@LaunchedEffect
+        snackbar?.showSnackbar(message)
+        viewModel.clearSyncError()
+    }
+
+    // Prioriza iniciativas con riesgos altos/críticos abiertos (gobernanza), luego en curso.
+    val focusProjects = remember(dashboard.items, riskCountByProject) {
+        val critical = dashboard.items
+            .filter { (riskCountByProject[it.project.id] ?: 0) > 0 }
+            .sortedByDescending { riskCountByProject[it.project.id] ?: 0 }
+        val active = dashboard.items
+            .filter {
+                it.project.status == ProjectStatus.IN_PROGRESS &&
+                    (riskCountByProject[it.project.id] ?: 0) == 0
+            }
             .sortedByDescending { it.progress }
-        val rest = dashboard.items.filter {
-            it.project.status != ProjectStatus.AT_RISK && it.project.status != ProjectStatus.IN_PROGRESS
-        }
-        (atRisk + active + rest).take(FOCUS_PROJECTS_LIMIT)
+        val criticalIds = critical.map { it.project.id }.toSet()
+        val activeIds = active.map { it.project.id }.toSet()
+        val rest = dashboard.items.filter { it.project.id !in criticalIds && it.project.id !in activeIds }
+        (critical + active + rest).take(FOCUS_PROJECTS_LIMIT)
     }
     val capacityPercent = remember(analytics.capacityRows) {
         analytics.capacityRows.map { it.loadPercent }.average().takeIf { !it.isNaN() }?.toInt() ?: 0
@@ -138,7 +163,7 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onOpenGovernance) {
+                    IconButton(onClick = onOpenSupport) {
                         Box {
                             Icon(
                                 Icons.Outlined.Notifications,
@@ -337,6 +362,7 @@ fun HomeScreen(
                     itemsIndexed(focusProjects, key = { _, item -> "focus_${item.project.id}" }) { index, item ->
                         ProjectWorkbenchCard(
                             item = item,
+                            highRiskCount = riskCountByProject[item.project.id] ?: 0,
                             onClick = { onProjectClick(item.project.id) },
                             cardContentDescription = openProjectDescription,
                             modifier = Modifier.staggeredEnter(index, baseDelayMs = 200),
@@ -347,12 +373,24 @@ fun HomeScreen(
                     HomeSectionHeader(
                         eyebrow = stringResource(R.string.home_agenda_eyebrow),
                         title = stringResource(R.string.home_agenda_title),
-                        actionLabel = stringResource(R.string.home_agenda_count, milestones.pending),
+                        actionLabel = stringResource(
+                            R.string.home_agenda_count,
+                            combinedAgenda.size.coerceAtLeast(milestones.pending),
+                        ),
                         onAction = null,
                     )
                 }
+                if (agendaFromServer) {
+                    item(key = "agenda_synced") {
+                        Text(
+                            text = stringResource(R.string.iam_profile_kpis_from_server),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Vx.Green,
+                        )
+                    }
+                }
                 item(key = "agenda") {
-                    if (milestones.upcoming.isEmpty()) {
+                    if (combinedAgenda.isEmpty()) {
                         HomeEmptyCard(
                             icon = Icons.Outlined.EventAvailable,
                             title = stringResource(R.string.home_agenda_empty_title),
@@ -361,11 +399,18 @@ fun HomeScreen(
                             onAction = null,
                         )
                     } else {
-                        GovernanceAgenda(
-                            items = milestones.upcoming,
-                            onOpen = onOpenProjectMilestones,
+                        PortfolioAgenda(
+                            items = combinedAgenda,
+                            onOpenProject = onOpenProjectMilestones,
                         )
                     }
+                }
+                item(key = "agenda_actions") {
+                    HomeAgendaActions(
+                        onSync = { viewModel.refreshRemoteAgenda() },
+                        onCreateCheckIn = { viewModel.createAgendaCheckIn(defaultCheckInTitle) },
+                        onScheduleMeeting = { viewModel.schedulePortfolioMeeting(defaultMeetingTitle) },
+                    )
                 }
             }
         }
